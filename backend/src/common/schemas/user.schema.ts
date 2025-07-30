@@ -96,7 +96,7 @@ export class User {
   };
 
   @Prop()
-  notes: string; // Admin/Staff notes about customer
+  notes: string; // Admin notes about customer
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

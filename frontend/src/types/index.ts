@@ -46,7 +46,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'user' | 'staff' | 'admin';
+  role: 'user' | 'admin';
   avatar?: string;
   phone?: string;
   addresses?: Address[];

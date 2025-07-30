@@ -12,12 +12,10 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Auto-redirect admin/staff to their dashboards
+    // Auto-redirect admin to their dashboard
     if (isAuthenticated && user) {
       if (user.role === 'admin') {
         router.push('/admin');
-      } else if (['sales_staff', 'warehouse_staff', 'content_editor'].includes(user.role)) {
-        router.push('/staff');
       }
     }
   }, [isAuthenticated, user, router]);
