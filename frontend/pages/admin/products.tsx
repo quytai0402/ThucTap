@@ -15,8 +15,9 @@ import {
   StarIcon
 } from '@heroicons/react/24/outline';
 import productService from '../../src/services/productService';
+import categoriesService from '../../src/services/categoriesService';
 
-interface Product {
+interface AdminProduct {
   _id: string;
   id: string;
   name: string;
@@ -24,7 +25,8 @@ interface Product {
   originalPrice?: number;
   images: string[];
   image: string;
-  category: string;
+  category: string | { name: string; _id: string };
+  categoryName?: string; // Add this for mapped category name
   brand: string;
   stock: number;
   stockQuantity: number;
@@ -50,6 +52,7 @@ interface CreateProductData {
   stock: number;
   stockQuantity?: number;
   description: string;
+  shortDescription?: string;
   images?: string[];
 }
 
@@ -59,47 +62,93 @@ const AdminProducts = () => {
   const [selectedBrand, setSelectedBrand] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   
+  // Dynamic data from API
+  const [categories, setCategories] = useState<any[]>([]);
+  const [brands, setBrands] = useState<any[]>([]);
+  
   // Form states
   const [showForm, setShowForm] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   
   // Delete confirmation
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [productToDelete, setProductToDelete] = useState<AdminProduct | null>(null);
 
   // Load products on component mount
   useEffect(() => {
     loadProducts();
+    loadCategories();
+    loadBrands();
   }, []);
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await productService.getProducts();
+      const response = await productService.getAdminProducts();
+      
+      console.log('Admin products response:', response);
       
       // Handle different response formats
-      if (response.data && Array.isArray(response.data)) {
-        setProducts(response.data);
-      } else if (response.success && Array.isArray(response.data)) {
-        setProducts(response.data);
+      let productsData = [];
+      if (response.success && Array.isArray(response.data)) {
+        productsData = response.data;
+      } else if (response.data && Array.isArray(response.data)) {
+        productsData = response.data;
       } else if (Array.isArray(response)) {
-        setProducts(response);
+        productsData = response;
       } else {
         console.warn('Unexpected API response format:', response);
-        setProducts([]);
+        productsData = [];
       }
+      
+      console.log('Raw products data:', productsData);
+      
+      // Map _id to id for compatibility and ensure proper data structure
+      const mappedProducts = productsData.map((product: any) => ({
+        ...product,
+        id: product._id || product.id,
+        image: product.images?.[0] || '/images/placeholder.jpg',
+        stockQuantity: product.stock || 0,
+        // Ensure category is accessible
+        categoryName: typeof product.category === 'string' ? product.category : product.category?.name || 'N/A'
+      }));
+      
+      console.log('Mapped products:', mappedProducts);
+      setProducts(mappedProducts);
     } catch (error) {
       console.error('Error loading products:', error);
       setProducts([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await categoriesService.getCategories();
+      console.log('Categories loaded:', response);
+      setCategories(response.data || []);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      setCategories([]);
+    }
+  };
+
+  const loadBrands = async () => {
+    try {
+      const response = await productService.getAdminBrands();
+      console.log('Brands loaded:', response);
+      setBrands(response.data || []);
+    } catch (error) {
+      console.error('Error loading brands:', error);
+      setBrands([]);
     }
   };
 
@@ -109,17 +158,18 @@ const AdminProducts = () => {
       setFormLoading(true);
       
       if (editingProduct) {
-        // Update existing product
-        await productService.updateProduct(editingProduct.id, data);
+        // Update existing product - use _id
+        await productService.updateProduct(editingProduct._id || editingProduct.id, data);
       } else {
-        // Create new product
+        // Create new product - must include shortDescription
         await productService.createProduct({
           ...data,
+          shortDescription: data.shortDescription || data.description.substring(0, 150),
           images: data.images || []
         });
       }
       
-      // Reload products
+      // Reload products to show updated data from database
       await loadProducts();
       
       // Close form
@@ -127,51 +177,22 @@ const AdminProducts = () => {
       setEditingProduct(null);
     } catch (error) {
       console.error('Error saving product:', error);
-      // For demo purposes, we'll update the local state
-      if (editingProduct) {
-        setProducts(prev => prev.map(p => 
-          p.id === editingProduct.id 
-            ? { ...editingProduct, ...data, id: editingProduct.id }
-            : p
-        ));
-      } else {
-        const newProduct: Product = {
-          ...data,
-          _id: `PRD${Date.now()}`,
-          id: `PRD${Date.now()}`,
-          image: data.images?.[0] || '',
-          rating: 0,
-          reviews: 0,
-          reviewCount: 0,
-          stockQuantity: data.stockQuantity || data.stock || 0,
-          inStock: (data.stockQuantity || data.stock || 0) > 0,
-          isHot: false,
-          status: 'active' as const,
-          sold: 0,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          images: data.images || []
-        };
-        setProducts(prev => [newProduct, ...prev]);
-      }
-      setShowForm(false);
-      setEditingProduct(null);
+      alert(`Lỗi khi lưu sản phẩm: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setFormLoading(false);
     }
   };
 
   // Handle product deletion
-  const handleDeleteProduct = async (product: Product) => {
+  const handleDeleteProduct = async (product: AdminProduct) => {
     try {
-      await productService.deleteProduct(product.id);
+      await productService.deleteProduct(product._id || product.id);
       await loadProducts();
       setShowDeleteConfirm(false);
       setProductToDelete(null);
     } catch (error) {
       console.error('Error deleting product:', error);
-      // For demo purposes, remove from local state
-      setProducts(prev => prev.filter(p => p.id !== product.id));
+      alert(`Lỗi khi xóa sản phẩm: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setShowDeleteConfirm(false);
       setProductToDelete(null);
     }
@@ -185,22 +206,47 @@ const AdminProducts = () => {
       setSelectedProducts([]);
     } catch (error) {
       console.error('Error bulk deleting products:', error);
-      // For demo purposes, remove from local state
-      setProducts(prev => prev.filter(p => !selectedProducts.includes(p.id)));
+      alert(`Lỗi khi xóa sản phẩm: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setSelectedProducts([]);
     }
   };
 
   // Filter products
   const filteredProducts = (products || []).filter(product => {
-    const categoryName = typeof product.category === 'string' ? product.category : (product.category as any)?.name || '';
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         categoryName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || 
-      (typeof product.category === 'string' ? product.category === selectedCategory : (product.category as any)?.name === selectedCategory);
+    // Get category name safely
+    const categoryName = product.categoryName || 
+                        (typeof product.category === 'string' ? product.category : product.category?.name) || '';
+    
+    // Search matching
+    const matchesSearch = !searchQuery || (
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      categoryName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    
+    // Category filtering - exact match with category name
+    const matchesCategory = !selectedCategory || categoryName === selectedCategory;
+    
+    // Brand filtering - exact match with brand name
     const matchesBrand = !selectedBrand || product.brand === selectedBrand;
+    
+    // Status filtering - exact match with status
     const matchesStatus = !selectedStatus || product.status === selectedStatus;
+    
+    // Uncomment for debugging filters
+    // console.log('Filtering product:', {
+    //   name: product.name,
+    //   categoryName,
+    //   selectedCategory,
+    //   matchesCategory,
+    //   brand: product.brand,
+    //   selectedBrand,
+    //   matchesBrand,
+    //   status: product.status,
+    //   selectedStatus,
+    //   matchesStatus,
+    //   finalMatch: matchesSearch && matchesCategory && matchesBrand && matchesStatus
+    // });
     
     return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
   });
@@ -252,7 +298,10 @@ const AdminProducts = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quản lý sản phẩm</h1>
-            <p className="text-gray-600 dark:text-gray-400">Quản lý danh sách sản phẩm của cửa hàng</p>
+            <p className="text-gray-600 dark:text-gray-400">
+              Quản lý danh sách sản phẩm của cửa hàng - 
+              Hiển thị {filteredProducts.length}/{products.length} sản phẩm
+            </p>
           </div>
           <div className="mt-4 sm:mt-0 flex space-x-3">
             {selectedProducts.length > 0 && (
@@ -353,13 +402,11 @@ const AdminProducts = () => {
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Tất cả danh mục</option>
-                <option value="Gaming">Laptop Gaming</option>
-                <option value="MacBook">MacBook</option>
-                <option value="Office">Laptop Văn phòng</option>
-                <option value="Ultrabook">Ultrabook</option>
-                <option value="Business">Laptop Doanh nghiệp</option>
-                <option value="Student">Laptop Sinh viên</option>
-                <option value="Phụ kiện">Phụ kiện Laptop</option>
+                {categories.map(category => (
+                  <option key={category._id} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
               <select
                 value={selectedBrand}
@@ -367,10 +414,11 @@ const AdminProducts = () => {
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Tất cả thương hiệu</option>
-                <option value="Apple">Apple</option>
-                <option value="Samsung">Samsung</option>
-                <option value="Dell">Dell</option>
-                <option value="HP">HP</option>
+                {brands.map((brand, index) => (
+                  <option key={index} value={brand}>
+                    {brand}
+                  </option>
+                ))}
               </select>
               <select
                 value={selectedStatus}
@@ -483,7 +531,7 @@ const AdminProducts = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {typeof product.category === 'string' ? product.category : (product.category as any)?.name || 'N/A'}
+                      {product.categoryName || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">
@@ -596,7 +644,10 @@ const AdminProducts = () => {
             setEditingProduct(null);
           }}
           onSubmit={handleFormSubmit}
-          product={editingProduct}
+          product={editingProduct ? {
+            ...editingProduct,
+            category: typeof editingProduct.category === 'string' ? editingProduct.category : editingProduct.category?.name || ''
+          } : null}
           isLoading={formLoading}
         />
 

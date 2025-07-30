@@ -12,16 +12,10 @@ async function seedAdminUsers() {
   
   const adminUsers = [
     {
-      email: 'admin@test.com',
-      password: 'admin123',
-      fullName: 'Admin User',
+      email: 'admin@admin.com',
+      password: 'admin',
+      fullName: 'System Administrator',
       role: UserRole.ADMIN,
-    },
-    {
-      email: 'customer@test.com', 
-      password: 'customer123',
-      fullName: 'Test Customer',
-      role: UserRole.CUSTOMER,
     }
   ];
 

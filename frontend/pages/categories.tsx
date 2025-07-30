@@ -13,7 +13,21 @@ interface Category {
   image?: string
   productCount: number
   isActive: boolean
+  sort?: number
 }
+
+const getCategoryIcon = (categoryName: string): string => {
+  const name = categoryName.toLowerCase();
+  if (name.includes('gaming') || name.includes('game')) return '🎮';
+  if (name.includes('doanh nghiệp') || name.includes('business')) return '💼';
+  if (name.includes('sinh viên') || name.includes('student')) return '🎓';
+  if (name.includes('văn phòng') || name.includes('office')) return '🏢';
+  if (name.includes('phụ kiện') || name.includes('accessories')) return '🔌';
+  if (name.includes('macbook') || name.includes('apple')) return '🍎';
+  if (name.includes('ultrabook') || name.includes('mỏng')) return '✨';
+  if (name.includes('test')) return '🧪';
+  return '💻'; // Default laptop icon
+};
 
 const Categories: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([])
@@ -25,8 +39,18 @@ const Categories: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await categoriesService.getCategories();
-      setCategories(response.data || response || []);
+      const response = await categoriesService.getCategories({ isActive: true });
+      let categoriesData = response.data || response || [];
+      
+      // Sort categories by sort field and then by name
+      categoriesData = categoriesData.sort((a: Category, b: Category) => {
+        if (a.sort !== b.sort) {
+          return (a.sort || 0) - (b.sort || 0);
+        }
+        return a.name.localeCompare(b.name);
+      });
+      
+      setCategories(categoriesData);
     } catch (error) {
       console.error('Error fetching categories:', error);
     } finally {
@@ -78,13 +102,32 @@ const Categories: React.FC = () => {
                 >
                   <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1">
                     <div className="relative overflow-hidden">
-                      <img
-                        src={category.image}
-                        alt={category.name}
-                        className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
+                      {/* Background gradient - always visible */}
+                      <div className="w-full h-48 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <div className="text-4xl mb-2">{getCategoryIcon(category.name)}</div>
+                          <div className="text-lg font-semibold">{category.name}</div>
+                        </div>
+                      </div>
+                      
+                      {/* Overlay image if available */}
+                      {category.image && (
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="absolute inset-0 w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      )}
+                      
+                      {/* Overlay for better text readability */}
                       <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-10 transition-all duration-300"></div>
-                      <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      
+                      {/* Product count badge */}
+                      <div className="absolute top-4 right-4 bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium z-10">
                         {category.productCount} sản phẩm
                       </div>
                     </div>
@@ -121,18 +164,28 @@ const Categories: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {categories.slice(0, 4).map((category) => (
+              {categories
+                .filter(cat => cat.productCount > 0)
+                .slice(0, 4)
+                .map((category) => (
                 <Link
                   key={category._id}
                   href={`/products?category=${category.slug}`}
                   className="group text-center p-6 rounded-lg hover:bg-gray-50 transition-colors"
                 >
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full overflow-hidden">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center relative">
+                    <div className="text-white text-2xl z-10">{getCategoryIcon(category.name)}</div>
+                    {category.image && (
+                      <img
+                        src={category.image}
+                        alt={category.name}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    )}
                   </div>
                   <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                     {category.name}

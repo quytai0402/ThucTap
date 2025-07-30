@@ -73,6 +73,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       description: 'Quản lý sản phẩm'
     },
     { 
+      name: 'Danh mục', 
+      href: '/admin/categories', 
+      icon: ClipboardDocumentListIcon,
+      description: 'Quản lý danh mục'
+    },
+    { 
       name: 'Đơn hàng', 
       href: '/admin/orders', 
       icon: ShoppingCartIcon,

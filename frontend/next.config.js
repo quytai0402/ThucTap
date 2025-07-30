@@ -2,8 +2,15 @@
 const nextConfig = {
   pageExtensions: ['ts', 'tsx', 'js', 'jsx'],
   images: {
-    domains: ['localhost', 'example.com', 'images.unsplash.com'],
     remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
       {
         protocol: 'https',
         hostname: '**',
@@ -13,6 +20,9 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
   },
+  experimental: {
+    serverComponentsExternalPackages: [],
+  },
 }
 
-module.exports = nextConfig
+module.exports = nextConfig;

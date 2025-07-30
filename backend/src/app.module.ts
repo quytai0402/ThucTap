@@ -14,7 +14,6 @@ import { AddressesModule } from './addresses/addresses.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { UploadModule } from './upload/upload.module';
-import { SeedService } from './common/seed.service';
 import { ClearDataService } from './common/clear-data.service';
 import { AdminController } from './common/admin.controller';
 import { User, UserSchema } from './common/schemas/user.schema';
@@ -71,6 +70,6 @@ import { StockAdjustment, StockAdjustmentSchema } from './common/schemas/stock-a
     UploadModule,
   ],
   controllers: [AdminController],
-  providers: [SeedService, ClearDataService],
+  providers: [ClearDataService],
 })
 export class AppModule {}

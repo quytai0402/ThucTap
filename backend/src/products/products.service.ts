@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as mongoose from 'mongoose';
 import { Product, ProductDocument, ProductStatus } from '../common/schemas/product.schema';
+import { Category, CategoryDocument } from '../common/schemas/category.schema';
 
 export interface CreateProductDto {
   name: string;
@@ -56,9 +58,18 @@ export interface ProductFilter {
 export class ProductsService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
+    console.log('🚀 Creating product with data:', createProductDto);
+    
+    // Find category by name
+    const category = await this.categoryModel.findOne({ name: createProductDto.category });
+    if (!category) {
+      throw new NotFoundException(`Category "${createProductDto.category}" not found`);
+    }
+    
     // Generate slug from name
     const slug = createProductDto.name
       .toLowerCase()
@@ -66,12 +77,36 @@ export class ProductsService {
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '');
 
+    console.log('📝 Generated slug:', slug);
+    console.log('📂 Found category:', category.name, 'with ID:', category._id);
+
     const product = new this.productModel({
       ...createProductDto,
+      category: category._id, // Use ObjectId instead of string
       slug,
     });
 
-    return product.save();
+    console.log('💾 Product object before save:', product.toObject());
+
+    try {
+    const savedProduct = await product.save();
+    console.log('✅ Product saved successfully:', savedProduct._id);
+
+    // Update category product count
+    const categoryBefore = await this.categoryModel.findById(category._id);
+    console.log('📊 Category before update:', categoryBefore?.productCount);
+    
+    const updateResult = await this.categoryModel.findByIdAndUpdate(
+      category._id, 
+      { $inc: { productCount: 1 } },
+      { new: true } // Return updated document
+    );
+    console.log('📊 Category after update:', updateResult?.productCount);
+    console.log('📊 Updated category product count for:', category.name);      return savedProduct;
+    } catch (error) {
+      console.error('❌ Error saving product:', error);
+      throw error;
+    }
   }
 
   async findAll(
@@ -90,7 +125,20 @@ export class ProductsService {
     const query: any = { status: ProductStatus.ACTIVE };
 
     // Apply filters
-    if (filter.category) query.category = filter.category;
+    if (filter.category) {
+      // Try to find category by name first, if it's a string
+      if (typeof filter.category === 'string') {
+        const category = await this.categoryModel.findOne({ name: filter.category });
+        if (category) {
+          query.category = category._id;
+        } else {
+          // If category not found, use the string directly (might be ObjectId string)
+          query.category = filter.category;
+        }
+      } else {
+        query.category = filter.category;
+      }
+    }
     if (filter.brand) query.brand = new RegExp(filter.brand, 'i');
     if (filter.minPrice || filter.maxPrice) {
       query.price = {};
@@ -165,6 +213,11 @@ export class ProductsService {
   }
 
   async findOne(id: string): Promise<Product> {
+    // Check if id is valid ObjectId
+    if (!id || id === 'undefined' || !mongoose.Types.ObjectId.isValid(id)) {
+      throw new NotFoundException('Invalid product ID');
+    }
+    
     const product = await this.productModel
       .findById(id)
       .populate('category', 'name slug');
@@ -270,10 +323,23 @@ export class ProductsService {
   }
 
   async remove(id: string): Promise<void> {
+    // Get product first to access its category
+    const product = await this.productModel.findById(id);
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
     const result = await this.productModel.deleteOne({ _id: id });
     if (result.deletedCount === 0) {
       throw new NotFoundException('Product not found');
     }
+
+    // Update category product count
+    await this.categoryModel.findByIdAndUpdate(
+      product.category,
+      { $inc: { productCount: -1 } }
+    );
+    console.log('📊 Updated category product count after deletion');
   }
 
   async getBrands(): Promise<string[]> {

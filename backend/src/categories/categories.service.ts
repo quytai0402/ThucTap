@@ -51,13 +51,12 @@ export class CategoriesService {
       .populate('parent', 'name slug')
       .sort({ sort: 1, name: 1 });
 
-        // Add product count for each category
+    // Add product count for each category
     const categoriesWithCounts = await Promise.all(
       categories.map(async (category) => {
-        // Convert ObjectId to string for comparison with product.category field
-        const categoryIdStr = category._id.toString();
+        // Use ObjectId for comparison with product.category field
         const productCount = await this.productModel.countDocuments({ 
-          category: categoryIdStr 
+          category: category._id 
         });
         
         return {
@@ -113,16 +112,44 @@ export class CategoriesService {
     return category;
   }
 
-  async findBySlug(slug: string): Promise<Category> {
+  async findBySlug(slug: string): Promise<Category | null> {
+    if (!slug) {
+      return null;
+    }
+    
     const category = await this.categoryModel
       .findOne({ slug, isActive: true })
       .populate('parent', 'name slug');
     
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
-    
     return category;
+  }
+
+  async findPopular(limit: number = 4): Promise<any[]> {
+    // Get all active categories
+    const categories = await this.categoryModel
+      .find({ isActive: true })
+      .sort({ sort: 1, name: 1 })
+      .lean();
+
+    // Count products for each category
+    const categoriesWithCount = await Promise.all(
+      categories.map(async (category) => {
+        const productCount = await this.productModel.countDocuments({
+          category: category._id,
+          isActive: true
+        });
+        
+        return {
+          ...category,
+          productCount
+        };
+      })
+    );
+
+    // Sort by product count (descending) and return top categories
+    return categoriesWithCount
+      .sort((a, b) => b.productCount - a.productCount)
+      .slice(0, limit);
   }
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto): Promise<Category> {

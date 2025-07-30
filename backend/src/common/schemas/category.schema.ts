@@ -25,6 +25,9 @@ export class Category {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({ default: 0 })
+  productCount: number;
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);

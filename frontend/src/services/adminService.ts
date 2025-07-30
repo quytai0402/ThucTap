@@ -160,27 +160,7 @@ class AdminService {
     }
   }
 
-  /**
-   * Generate sample data for testing
-   */
-  async generateSampleData(counts?: {
-    users?: number;
-    products?: number;
-    orders?: number;
-    categories?: number;
-  }): Promise<{
-    success: boolean;
-    message: string;
-    generatedCounts: { [collection: string]: number };
-  }> {
-    try {
-      const response = await api.post('/admin/generate-sample-data', counts);
-      return response.data;
-    } catch (error) {
-      console.error('Error generating sample data:', error);
-      throw error;
-    }
-  }
+  // Admin service methods for database and system management
 }
 
 export const adminService = new AdminService();

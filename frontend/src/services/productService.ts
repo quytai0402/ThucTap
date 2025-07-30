@@ -1,10 +1,10 @@
-import api from '../utils/api';
+import api, { publicApi } from '../utils/api';
 import { Product } from '../types';
 
 export interface CreateProductData {
   name: string;
   description: string;
-  shortDescription?: string;
+  shortDescription: string;
   price: number;
   originalPrice?: number;
   images: string[];
@@ -63,7 +63,7 @@ class ProductService {
         }
       });
       
-      const response = await api.get(`/products?${params.toString()}`);
+      const response = await publicApi.get(`/products?${params.toString()}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -74,7 +74,7 @@ class ProductService {
   // Get single product by ID
   async getProduct(id: string): Promise<Product> {
     try {
-      const response = await api.get(`/products/${id}`);
+      const response = await publicApi.get(`/products/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -85,7 +85,7 @@ class ProductService {
   // Get product by slug
   async getProductBySlug(slug: string): Promise<Product> {
     try {
-      const response = await api.get(`/products/slug/${slug}`);
+      const response = await publicApi.get(`/products/slug/${slug}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching product by slug:', error);
@@ -96,7 +96,7 @@ class ProductService {
   // Get featured products
   async getFeaturedProducts(limit = 8): Promise<Product[]> {
     try {
-      const response = await api.get(`/products/featured?limit=${limit}`);
+      const response = await publicApi.get(`/products/featured?limit=${limit}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching featured products:', error);
@@ -107,7 +107,7 @@ class ProductService {
   // Get products on sale
   async getOnSaleProducts(limit = 8): Promise<Product[]> {
     try {
-      const response = await api.get(`/products/on-sale?limit=${limit}`);
+      const response = await publicApi.get(`/products/on-sale?limit=${limit}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching on-sale products:', error);
@@ -118,7 +118,7 @@ class ProductService {
   // Get best sellers
   async getBestSellers(limit = 8): Promise<Product[]> {
     try {
-      const response = await api.get(`/products/best-sellers?limit=${limit}`);
+      const response = await publicApi.get(`/products/best-sellers?limit=${limit}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching best sellers:', error);
@@ -129,7 +129,7 @@ class ProductService {
   // Get related products
   async getRelatedProducts(productId: string, limit = 4): Promise<Product[]> {
     try {
-      const response = await api.get(`/products/${productId}/related?limit=${limit}`);
+      const response = await publicApi.get(`/products/${productId}/related?limit=${limit}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching related products:', error);
@@ -140,7 +140,7 @@ class ProductService {
   // Get all brands
   async getBrands(): Promise<string[]> {
     try {
-      const response = await api.get('/products/brands');
+      const response = await publicApi.get('/products/brands');
       return response.data;
     } catch (error) {
       console.error('Error fetching brands:', error);
@@ -162,7 +162,12 @@ class ProductService {
       });
       
       const response = await api.get(`/admin/products?${params.toString()}`);
-      return response.data;
+      
+      if (response.data.success) {
+        return response.data;
+      } else {
+        throw new Error('Failed to fetch admin products');
+      }
     } catch (error) {
       console.error('Error fetching admin products:', error);
       throw error;
@@ -173,7 +178,12 @@ class ProductService {
   async getAdminProduct(id: string): Promise<Product> {
     try {
       const response = await api.get(`/admin/products/${id}`);
-      return response.data;
+      
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error('Failed to fetch admin product');
+      }
     } catch (error) {
       console.error('Error fetching admin product:', error);
       throw error;
@@ -183,8 +193,15 @@ class ProductService {
   // Create new product (Admin only)
   async createProduct(productData: CreateProductData): Promise<Product> {
     try {
+      console.log('🚀 Frontend creating product:', productData);
       const response = await api.post('/admin/products', productData);
-      return response.data;
+      console.log('📝 Backend response:', response.data);
+      
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to create product');
+      }
     } catch (error) {
       console.error('Error creating product:', error);
       throw error;
@@ -195,7 +212,12 @@ class ProductService {
   async updateProduct(id: string, productData: UpdateProductData): Promise<Product> {
     try {
       const response = await api.patch(`/admin/products/${id}`, productData);
-      return response.data;
+      
+      if (response.data.success) {
+        return response.data.data;
+      } else {
+        throw new Error(response.data.message || 'Failed to update product');
+      }
     } catch (error) {
       console.error('Error updating product:', error);
       throw error;
@@ -264,7 +286,7 @@ class ProductService {
   // Get categories (for product creation/editing)
   async getCategories() {
     try {
-      const response = await api.get('/admin/products/categories/list');
+      const response = await api.get('/categories');
       return response.data;
     } catch (error) {
       console.error('Error fetching categories:', error);

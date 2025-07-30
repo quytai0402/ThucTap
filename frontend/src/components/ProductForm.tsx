@@ -7,6 +7,14 @@ import {
 } from '@heroicons/react/24/outline';
 import { Product } from '../types';
 import { CreateProductData } from '../services/productService';
+import categoriesService from '../services/categoriesService';
+import productService from '../services/productService';
+
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+}
 
 interface ExtendedProductData extends CreateProductData {
   image: string;
@@ -16,6 +24,7 @@ interface ExtendedProductData extends CreateProductData {
   isHot?: boolean;
   isSale?: boolean;
   specs?: Record<string, any>;
+  shortDescription: string;
 }
 
 interface ProductFormProps {
@@ -36,6 +45,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [formData, setFormData] = useState<ExtendedProductData>({
     name: '',
     description: '',
+    shortDescription: '',
     price: 0,
     originalPrice: 0,
     image: '',
@@ -67,6 +77,50 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const [imagePreview, setImagePreview] = useState<string>('');
   const [additionalImages, setAdditionalImages] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingBrands, setLoadingBrands] = useState(false);
+
+  // Load categories from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        setLoadingCategories(true);
+        const response = await categoriesService.getCategories();
+        if (response && Array.isArray(response)) {
+          setCategories(response);
+        }
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  // Load brands from API  
+  useEffect(() => {
+    const loadBrands = async () => {
+      try {
+        setLoadingBrands(true);
+        const response = await productService.getAdminBrands();
+        if (response && response.success && Array.isArray(response.data)) {
+          setBrands(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading brands:', error);
+        // Fallback to default brands if API fails
+        setBrands(['Apple', 'Dell', 'HP', 'Asus', 'Lenovo', 'MSI', 'Acer', 'LG', 'Gigabyte', 'Razer']);
+      } finally {
+        setLoadingBrands(false);
+      }
+    };
+
+    loadBrands();
+  }, []);
 
   // Reset form when product changes
   useEffect(() => {
@@ -74,6 +128,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       setFormData({
         name: product.name,
         description: product.description,
+        shortDescription: (product as any).shortDescription || product.description.substring(0, 150),
         price: product.price,
         originalPrice: product.originalPrice || 0,
         image: product.image,
@@ -108,6 +163,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
       setFormData({
         name: '',
         description: '',
+        shortDescription: '',
         price: 0,
         originalPrice: 0,
         image: '',
@@ -187,36 +243,125 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        setImagePreview(imageUrl);
-        setFormData(prev => ({
-          ...prev,
-          image: imageUrl
-        }));
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          setImagePreview(imageUrl);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to Cloudinary via backend
+        const formDataUpload = new FormData();
+        formDataUpload.append('image', file);
+        formDataUpload.append('folder', 'products');
+
+        const response = await fetch('http://localhost:3001/api/upload/image', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const cloudinaryUrl = result.data.url;
+          
+          setFormData(prev => ({
+            ...prev,
+            image: cloudinaryUrl,
+            images: [cloudinaryUrl, ...(prev.images || []).slice(1)]
+          }));
+        } else {
+          console.error('Failed to upload image');
+          // Fallback to base64 for preview
+          const reader2 = new FileReader();
+          reader2.onload = (e) => {
+            const imageUrl = e.target?.result as string;
+            setFormData(prev => ({
+              ...prev,
+              image: imageUrl
+            }));
+          };
+          reader2.readAsDataURL(file);
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        // Fallback to base64
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          setFormData(prev => ({
+            ...prev,
+            image: imageUrl
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
     }
   };
 
-  const handleAdditionalImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAdditionalImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
-    files.forEach(file => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const imageUrl = e.target?.result as string;
-        setAdditionalImages(prev => [...prev, imageUrl]);
-        setFormData(prev => ({
-          ...prev,
-          images: [...(prev.images || []), imageUrl]
-        }));
-      };
-      reader.readAsDataURL(file);
-    });
+    
+    for (const file of files) {
+      try {
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          setAdditionalImages(prev => [...prev, imageUrl]);
+        };
+        reader.readAsDataURL(file);
+
+        // Upload to Cloudinary via backend
+        const formDataUpload = new FormData();
+        formDataUpload.append('image', file);
+        formDataUpload.append('folder', 'products');
+
+        const response = await fetch('http://localhost:3001/api/upload/image', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const cloudinaryUrl = result.data.url;
+          
+          setFormData(prev => ({
+            ...prev,
+            images: [...(prev.images || []), cloudinaryUrl]
+          }));
+        } else {
+          console.error('Failed to upload additional image');
+          // Fallback to base64
+          const reader2 = new FileReader();
+          reader2.onload = (e) => {
+            const imageUrl = e.target?.result as string;
+            setFormData(prev => ({
+              ...prev,
+              images: [...(prev.images || []), imageUrl]
+            }));
+          };
+          reader2.readAsDataURL(file);
+        }
+      } catch (error) {
+        console.error('Error uploading additional image:', error);
+        // Fallback to base64
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          setAdditionalImages(prev => [...prev, imageUrl]);
+          setFormData(prev => ({
+            ...prev,
+            images: [...(prev.images || []), imageUrl]
+          }));
+        };
+        reader.readAsDataURL(file);
+      }
+    }
   };
 
   const removeAdditionalImage = (index: number) => {
@@ -230,27 +375,30 @@ const ProductForm: React.FC<ProductFormProps> = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
+    if (!formData.name || !formData.name.trim()) {
       newErrors.name = 'Tên sản phẩm là bắt buộc';
     }
-    if (!formData.description.trim()) {
+    if (!formData.description || !formData.description.trim()) {
       newErrors.description = 'Mô tả sản phẩm là bắt buộc';
+    }
+    if (!formData.shortDescription || !formData.shortDescription.trim()) {
+      newErrors.shortDescription = 'Mô tả ngắn là bắt buộc';
+    } else if (formData.shortDescription.length > 150) {
+      newErrors.shortDescription = 'Mô tả ngắn không được vượt quá 150 ký tự';
     }
     if (formData.price <= 0) {
       newErrors.price = 'Giá sản phẩm phải lớn hơn 0';
     }
-    if (!formData.category.trim()) {
+    if (!formData.category || !formData.category.trim()) {
       newErrors.category = 'Danh mục là bắt buộc';
     }
-    if (!formData.brand.trim()) {
+    if (!formData.brand || !formData.brand.trim()) {
       newErrors.brand = 'Thương hiệu là bắt buộc';
     }
     if ((formData.stockQuantity || 0) < 0) {
       newErrors.stockQuantity = 'Số lượng tồn kho không được âm';
     }
-    if (!formData.image.trim()) {
-      newErrors.image = 'Ảnh sản phẩm là bắt buộc';
-    }
+    // Image is optional now - will use placeholder if empty
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -264,7 +412,25 @@ const ProductForm: React.FC<ProductFormProps> = ({
     }
 
     try {
-      await onSubmit(formData);
+      // Prepare data for submission
+      const submitData: CreateProductData = {
+        name: formData.name,
+        description: formData.description,
+        shortDescription: formData.shortDescription,
+        price: formData.price,
+        originalPrice: formData.originalPrice || undefined,
+        images: formData.images || [],
+        category: formData.category,
+        brand: formData.brand,
+        stock: formData.stockQuantity || formData.stock || 0,
+        specifications: formData.specs,
+        tags: [],
+        isFeatured: formData.isHot || false,
+        isOnSale: formData.isSale || false
+      };
+
+      console.log('Submitting product data:', submitData);
+      await onSubmit(submitData);
       onClose();
     } catch (error) {
       console.error('Error submitting form:', error);
@@ -333,6 +499,27 @@ const ProductForm: React.FC<ProductFormProps> = ({
                     {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Mô tả ngắn *
+                    </label>
+                    <textarea
+                      name="shortDescription"
+                      value={formData.shortDescription}
+                      onChange={handleInputChange}
+                      rows={2}
+                      maxLength={150}
+                      className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
+                        errors.shortDescription ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      }`}
+                      placeholder="Nhập mô tả ngắn (tối đa 150 ký tự)"
+                    />
+                    <div className="flex justify-between items-center mt-1">
+                      {errors.shortDescription && <p className="text-red-500 text-sm">{errors.shortDescription}</p>}
+                      <p className="text-gray-500 text-xs ml-auto">{formData.shortDescription.length}/150</p>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -375,18 +562,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
                         name="category"
                         value={formData.category}
                         onChange={handleInputChange}
+                        disabled={loadingCategories}
                         className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
                           errors.category ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                         }`}
                       >
-                        <option value="">Chọn danh mục</option>
-                        <option value="Gaming">Laptop Gaming</option>
-                        <option value="MacBook">MacBook</option>
-                        <option value="Office">Laptop Văn phòng</option>
-                        <option value="Ultrabook">Ultrabook</option>
-                        <option value="Business">Laptop Doanh nghiệp</option>
-                        <option value="Student">Laptop Sinh viên</option>
-                        <option value="Phụ kiện">Phụ kiện Laptop</option>
+                        <option value="">
+                          {loadingCategories ? 'Đang tải danh mục...' : 'Chọn danh mục'}
+                        </option>
+                        {categories.map((category) => (
+                          <option key={category._id} value={category.name}>
+                            {category.name}
+                          </option>
+                        ))}
                       </select>
                       {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                     </div>
@@ -399,21 +587,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
                         name="brand"
                         value={formData.brand}
                         onChange={handleInputChange}
+                        disabled={loadingBrands}
                         className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
                           errors.brand ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                         }`}
                       >
-                        <option value="">Chọn thương hiệu</option>
-                        <option value="Apple">Apple</option>
-                        <option value="Dell">Dell</option>
-                        <option value="HP">HP</option>
-                        <option value="Asus">Asus</option>
-                        <option value="Lenovo">Lenovo</option>
-                        <option value="MSI">MSI</option>
-                        <option value="Acer">Acer</option>
-                        <option value="LG">LG</option>
-                        <option value="Gigabyte">Gigabyte</option>
-                        <option value="Razer">Razer</option>
+                        <option value="">
+                          {loadingBrands ? 'Đang tải thương hiệu...' : 'Chọn thương hiệu'}
+                        </option>
+                        {brands.map((brand) => (
+                          <option key={brand} value={brand}>
+                            {brand}
+                          </option>
+                        ))}
                       </select>
                       {errors.brand && <p className="text-red-500 text-sm mt-1">{errors.brand}</p>}
                     </div>

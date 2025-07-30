@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+svg { background-color: #f3f4f6; }
+text { font-family: Arial, sans-serif; font-size: 12px; fill: #9ca3af; }
+</style>
+</head>
+<body>
+<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="#f3f4f6"/>
+  <rect x="50" y="50" width="200" height="150" fill="#e5e7eb" rx="8"/>
+  <circle cx="100" cy="120" r="15" fill="#9ca3af"/>
+  <polygon points="120,140 180,100 250,140 250,180 120,180" fill="#9ca3af"/>
+  <text x="150" y="220" text-anchor="middle">Product Image</text>
+  <text x="150" y="240" text-anchor="middle">Not Available</text>
+</svg>
+</body>
+</html>

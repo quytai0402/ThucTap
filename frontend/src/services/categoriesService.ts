@@ -1,4 +1,4 @@
-import api from '../utils/api';
+import api, { publicApi } from '../utils/api';
 
 export interface Category {
   _id: string;
@@ -59,7 +59,7 @@ class CategoriesService {
       if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
       if (filters?.parentCategory) params.append('parentCategory', filters.parentCategory);
 
-      const response = await api.get(`/categories?${params.toString()}`);
+      const response = await publicApi.get(`/categories?${params.toString()}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -70,7 +70,7 @@ class CategoriesService {
   // Get category tree structure
   async getCategoryTree(): Promise<CategoryTree[]> {
     try {
-      const response = await api.get('/categories/tree');
+      const response = await publicApi.get('/categories/tree');
       return response.data;
     } catch (error) {
       console.error('Error fetching category tree:', error);
@@ -81,7 +81,7 @@ class CategoriesService {
   // Get single category
   async getCategory(categoryId: string) {
     try {
-      const response = await api.get(`/categories/${categoryId}`);
+      const response = await publicApi.get(`/categories/${categoryId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching category:', error);
@@ -92,7 +92,7 @@ class CategoriesService {
   // Get category by slug
   async getCategoryBySlug(slug: string) {
     try {
-      const response = await api.get(`/categories/slug/${slug}`);
+      const response = await publicApi.get(`/categories/slug/${slug}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching category by slug:', error);
@@ -139,6 +139,17 @@ class CategoriesService {
       return response.data.categories || response.data;
     } catch (error) {
       console.error('Error fetching parent categories:', error);
+      throw error;
+    }
+  }
+
+  // Get popular categories with product count
+  async getPopularCategories(limit: number = 4) {
+    try {
+      const response = await publicApi.get(`/categories/popular?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching popular categories:', error);
       throw error;
     }
   }

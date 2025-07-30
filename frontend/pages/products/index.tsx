@@ -6,6 +6,7 @@ import Layout from '../../src/components/Layout'
 import { Product } from '@/types'
 import { useCart } from '../../src/context/CartContext'
 import productService from '../../src/services/productService'
+import categoriesService from '../../src/services/categoriesService'
 import { ShoppingCartIcon } from '@heroicons/react/24/outline'
 
 export default function ProductsPage() {
@@ -64,7 +65,7 @@ export default function ProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const categories = await productService.getCategories()
+      const categories = await categoriesService.getCategories()
       setCategories(categories?.data || categories || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -85,7 +86,7 @@ export default function ProductsPage() {
 
   const handleAddToCart = (product: Product) => {
     addItem({
-      id: product.id,
+      id: product._id || product.id,
       name: product.name,
       price: product.price,
       image: product.images?.[0] || '/images/placeholder-product.jpg',
@@ -181,9 +182,9 @@ export default function ProductsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => (
-                <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div key={product._id || product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
                   {/* Product Image */}
-                  <Link href={`/products/${product.id}`}>
+                  <Link href={`/products/${product._id || product.id}`}>
                     <div className="aspect-w-1 aspect-h-1 bg-gray-200 cursor-pointer">
                       {product.images && product.images.length > 0 ? (
                         <img
@@ -204,7 +205,7 @@ export default function ProductsPage() {
                   
                   {/* Product Info */}
                   <div className="p-4">
-                    <Link href={`/products/${product.id}`}>
+                    <Link href={`/products/${product._id || product.id}`}>
                       <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors">
                         {product.name}
                       </h3>

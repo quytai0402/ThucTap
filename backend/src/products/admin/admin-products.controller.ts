@@ -117,13 +117,16 @@ export class AdminProductsController {
   @ApiBearerAuth()
   async create(@Body() createProductDto: CreateProductDto) {
     try {
+      console.log('🎯 Admin creating product:', createProductDto);
       const product = await this.productsService.create(createProductDto);
+      console.log('🎉 Product created successfully in controller:', product.name);
       return {
         success: true,
         message: 'Product created successfully',
         data: product,
       };
     } catch (error) {
+      console.error('💥 Error in admin create product:', error);
       throw new HttpException(
         { success: false, message: 'Failed to create product', error: error.message },
         HttpStatus.BAD_REQUEST,

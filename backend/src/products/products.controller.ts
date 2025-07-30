@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductsService, CreateProductDto, UpdateProductDto } from './products.service';
 import { CategoriesService } from '../categories/categories.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 
 @ApiTags('products')
 @Controller('products')
@@ -52,6 +53,7 @@ export class ProductsController {
         categoryId = categoryDoc ? (categoryDoc as any)._id.toString() : undefined;
       } catch (error) {
         console.error('Error resolving category slug:', error);
+        // If category slug doesn't exist, skip filtering by category
         categoryId = undefined;
       }
     }
