@@ -165,10 +165,10 @@ const News: React.FC = () => {
                     placeholder="Tìm kiếm bài viết..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-6 py-4 pl-10 text-gray-900 rounded-full focus:outline-none focus:ring-4 focus:ring-white/30"
+                    className="w-full px-6 py-4 pl-10 text-gray-900 bg-white rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-white/40 transition duration-200"
                   />
                   <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400 pointer-events-none" />
-                </div>
+              </div>
             </div>
           </div>
         </div>

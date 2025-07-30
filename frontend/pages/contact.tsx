@@ -50,7 +50,7 @@ const Contact: React.FC = () => {
       icon: MapPinIcon,
       title: 'Địa chỉ cửa hàng',
       details: [
-        '123 Đường Nguyễn Văn Cừ, Quận 1',
+        '2/1/15 đường 40, F Hiệp Bình Chánh, Tp. Thủ Đức',
         'TP. Hồ Chí Minh, Việt Nam'
       ]
     },
@@ -58,16 +58,16 @@ const Contact: React.FC = () => {
       icon: PhoneIcon,
       title: 'Số điện thoại',
       details: [
-        'Hotline: 1900-1234',
-        'Zalo: 0901-234-567'
+        'Hotline: +84 987.613.161',
+        'Zalo: 0987613161'
       ]
     },
     {
       icon: EnvelopeIcon,
       title: 'Email',
       details: [
-        'info@laptopstore.vn',
-        'support@laptopstore.vn'
+        'info@it-global.net',
+        'support@it-global.net'
       ]
     },
     {
@@ -104,7 +104,7 @@ const Contact: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Liên hệ - LaptopStore</title>
+        <title>Liên hệ - IT-Global</title>
         <meta name="description" content="Liên hệ với LaptopStore để được tư vấn và hỗ trợ" />
       </Head>
 

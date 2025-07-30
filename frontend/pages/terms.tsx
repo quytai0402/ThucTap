@@ -86,7 +86,7 @@ const Terms: React.FC = () => {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="prose prose-lg max-w-none">
               <p className="text-xl text-gray-600 mb-8">
-                Chào mừng bạn đến với LaptopStore. Khi sử dụng website và dịch vụ của chúng tôi, 
+                Chào mừng bạn đến với IT-Global. Khi sử dụng website và dịch vụ của chúng tôi, 
                 bạn đồng ý tuân thủ các điều khoản và điều kiện được nêu dưới đây.
               </p>
               <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
@@ -100,7 +100,7 @@ const Terms: React.FC = () => {
         </div>
 
         {/* Terms Sections */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {sections.map((section) => (
@@ -136,7 +136,7 @@ const Terms: React.FC = () => {
             
             <div className="space-y-8">
               {/* Warranty Policy */}
-              <div className="border border-gray-200 rounded-lg p-6">
+              <div className="border border-gray-800 rounded-lg p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   1. Chính sách bảo hành
                 </h3>
@@ -149,7 +149,7 @@ const Terms: React.FC = () => {
               </div>
 
               {/* Return Policy */}
-              <div className="border border-gray-200 rounded-lg p-6">
+              <div className="border border-gray-800 rounded-lg p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   2. Chính sách đổi trả
                 </h3>
@@ -162,7 +162,7 @@ const Terms: React.FC = () => {
               </div>
 
               {/* Privacy */}
-              <div className="border border-gray-200 rounded-lg p-6">
+              <div className="border border-gray-800 rounded-lg p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   3. Quyền riêng tư
                 </h3>
@@ -175,7 +175,7 @@ const Terms: React.FC = () => {
               </div>
 
               {/* Intellectual Property */}
-              <div className="border border-gray-200 rounded-lg p-6">
+              <div className="border border-gray-800 rounded-lg p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   4. Sở hữu trí tuệ
                 </h3>
@@ -188,7 +188,7 @@ const Terms: React.FC = () => {
               </div>
 
               {/* Dispute Resolution */}
-              <div className="border border-gray-200 rounded-lg p-6">
+              <div className="border border-gray-800 rounded-lg p-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
                   5. Giải quyết tranh chấp
                 </h3>
@@ -204,7 +204,7 @@ const Terms: React.FC = () => {
         </div>
 
         {/* Updates */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-xl p-8 shadow-lg">
               <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
@@ -212,7 +212,7 @@ const Terms: React.FC = () => {
               </h2>
               <div className="space-y-4 text-gray-600">
                 <p>
-                  LaptopStore có quyền thay đổi, bổ sung các điều khoản này bất cứ lúc nào mà không cần 
+                  IT-Global có quyền thay đổi, bổ sung các điều khoản này bất cứ lúc nào mà không cần 
                   thông báo trước. Các thay đổi sẽ có hiệu lực ngay khi được đăng tải trên website.
                 </p>
                 <p>
@@ -249,7 +249,7 @@ const Terms: React.FC = () => {
                 href="mailto:legal@laptopstore.vn"
                 className="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
               >
-                Email: legal@laptopstore.vn
+                Email: info@it-global.net
               </a>
             </div>
           </div>

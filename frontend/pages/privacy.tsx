@@ -58,7 +58,7 @@ const Privacy: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Chính sách bảo mật - LaptopStore</title>
+        <title>Chính sách bảo mật - IT-Global</title>
         <meta name="description" content="Chính sách bảo mật thông tin khách hàng của LaptopStore" />
       </Head>
 
@@ -86,7 +86,7 @@ const Privacy: React.FC = () => {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="prose prose-lg max-w-none">
               <p className="text-xl text-gray-600 mb-8">
-                LaptopStore cam kết bảo vệ quyền riêng tư và thông tin cá nhân của khách hàng. 
+                IT-Global cam kết bảo vệ quyền riêng tư và thông tin cá nhân của khách hàng. 
                 Chính sách này giải thích cách chúng tôi thu thập, sử dụng và bảo vệ thông tin của bạn.
               </p>
             </div>
@@ -94,7 +94,7 @@ const Privacy: React.FC = () => {
         </div>
 
         {/* Sections */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {sections.map((section) => (
@@ -185,7 +185,7 @@ const Privacy: React.FC = () => {
         </div>
 
         {/* Cookies */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
               Chính sách Cookie

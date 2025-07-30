@@ -1,9 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
+
 import { 
   PhoneIcon, 
   EnvelopeIcon, 
-  MapPinIcon
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
 
 const Footer: React.FC = () => {
@@ -43,32 +44,20 @@ const Footer: React.FC = () => {
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="flex items-center mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">L</span>
-              </div>
-              <span className="ml-2 text-xl font-bold">LaptopStore</span>
+              <img
+                src="https://it-global.net/public/main/img/icon.svg" // hoặc link online như: "https://example.com/logo.png"
+                alt="ITS-Global Logo"
+                className="w-10 h-10 object-contain rounded-lg"
+            />
+              <span className="ml-2 text-xl font-bold">IT-Global</span>
             </div>
             <p className="text-gray-300 mb-4">
-              Cửa hàng laptop uy tín #1 Việt Nam với đa dạng sản phẩm từ các thương hiệu hàng đầu thế giới.
+              Công Ty TNHH Giải Pháp Công Nghệ IT-Global
             </p>
-            
-            {/* Contact Info */}
-            <div className="space-y-2">
-              <div className="flex items-center text-gray-300">
-                <PhoneIcon className="h-5 w-5 mr-2" />
-                <span>1900-1234</span>
-              </div>
-              <div className="flex items-center text-gray-300">
-                <EnvelopeIcon className="h-5 w-5 mr-2" />
-                <span>info@laptopstore.vn</span>
-              </div>
-              <div className="flex items-center text-gray-300">
-                <MapPinIcon className="h-5 w-5 mr-2" />
-                <span>123 Đường ABC, Quận 1, TP.HCM</span>
-              </div>
-            </div>
-
-            {/* Social Media */}
+            <p className="text-gray-300 mb-4">
+              Mr.Tân: 0987613161
+            </p>
+             {/* Social Media */}
             <div className="flex space-x-4 mt-6">
               <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
                 <span className="text-sm font-medium">Facebook</span>
@@ -82,6 +71,24 @@ const Footer: React.FC = () => {
               <a href="#" className="text-gray-400 hover:text-white transition-colors duration-200">
                 <span className="text-sm font-medium">YouTube</span>
               </a>
+            </div>
+            <p className="text-gray-300 mb-4">
+              Liên Hệ 
+            </p>
+            {/* Contact Info */}
+            <div className="space-y-2">
+              <div className="flex items-center text-gray-300">
+                <PhoneIcon className="h-5 w-5 mr-2" />
+                <span>+84 987.613.161</span>
+              </div>
+              <div className="flex items-center text-gray-300">
+                <EnvelopeIcon className="h-5 w-5 mr-2" />
+                <span>info@it-global.net</span>
+              </div>
+              <div className="flex items-center text-gray-300">
+                <MapPinIcon className="h-5 w-5 mr-2" />
+                <span>2/1/15 đường 40, F Hiệp Bình Chánh, Tp. Thủ Đức</span>
+              </div>
             </div>
           </div>
 
@@ -164,7 +171,7 @@ const Footer: React.FC = () => {
         <div className="mt-8 pt-8 border-t border-gray-800">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
-              © {currentYear} LaptopStore. Tất cả quyền được bảo lưu.
+              © {currentYear} IT-Global. Tất cả quyền được bảo lưu.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
               <Link href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">

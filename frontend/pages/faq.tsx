@@ -160,7 +160,7 @@ const FAQ: React.FC = () => {
         </div>
 
         {/* Search FAQ */}
-        <div className="py-12 bg-gray-50">
+        <div className="py-12 bg-gray-100">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-xl p-6 shadow-lg">
               <div className="flex items-center">
@@ -219,7 +219,7 @@ const FAQ: React.FC = () => {
         </div>
 
         {/* Quick Tips */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
               Mẹo hữu ích
@@ -265,7 +265,7 @@ const FAQ: React.FC = () => {
         </div>
 
         {/* Contact Support */}
-        <div className="py-16 bg-white">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -314,10 +314,10 @@ const FAQ: React.FC = () => {
                 Gửi tin nhắn
               </a>
               <a
-                href="tel:19001234"
+                href="tel:0987613161"
                 className="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
               >
-                Gọi ngay: 1900-1234
+                Gọi ngay: 0987613161
               </a>
             </div>
           </div>
