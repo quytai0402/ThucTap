@@ -82,20 +82,41 @@ export default function ProfileOrdersPage() {
   }, [user, router])
 
   useEffect(() => {
-    const filtered = filterOrders(activeTab)
-    setFilteredOrders(filtered)
+    try {
+      if (orders && Array.isArray(orders)) {
+        const filtered = filterOrders(activeTab)
+        setFilteredOrders(filtered)
+      } else {
+        console.warn("Orders is not an array:", orders);
+        setFilteredOrders([])
+      }
+    } catch (error) {
+      console.error("Error filtering orders:", error);
+      setFilteredOrders([])
+    }
   }, [orders, activeTab])
 
   const fetchOrders = async () => {
     try {
       const response = await api.get('/orders/my-orders')
       if (response.status === 200) {
-        setOrders(response.data)
+        // Ensure we're getting an array
+        const data = response.data;
+        if (Array.isArray(data)) {
+          setOrders(data);
+        } else if (data && typeof data === 'object' && Array.isArray(data.orders)) {
+          // If the response structure is { orders: [...] }
+          setOrders(data.orders);
+        } else {
+          console.error('Unexpected orders data format:', data);
+          setOrders([]);
+        }
       }
     } catch (error) {
-      console.error('Error fetching orders:', error)
+      console.error('Error fetching orders:', error);
+      setOrders([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -111,8 +132,28 @@ export default function ProfileOrdersPage() {
   }
 
   const filterOrders = (status: string) => {
-    if (status === 'all') return orders
-    return orders.filter(order => order.status === status)
+    try {
+      // Check if orders is valid
+      if (!orders) {
+        console.warn("Orders is undefined or null");
+        return []
+      }
+      
+      // Explicitly check if it's an array
+      if (!Array.isArray(orders)) {
+        console.warn("Orders is not an array:", typeof orders, orders);
+        return []
+      }
+      
+      // Return all orders for 'all' tab
+      if (status === 'all') return orders
+      
+      // Filter orders by status with safety checks
+      return orders.filter(order => order && order.status === status)
+    } catch (error) {
+      console.error("Error in filterOrders:", error);
+      return []
+    }
   }
 
   const viewOrderDetail = async (order: Order) => {
@@ -190,12 +231,12 @@ export default function ProfileOrdersPage() {
   ]
 
   const orderTabs = [
-    { id: 'all', name: 'Tất cả', count: orders.length },
-    { id: 'pending', name: 'Chờ xác nhận', count: orders.filter(o => o.status === 'pending').length },
-    { id: 'confirmed', name: 'Đã xác nhận', count: orders.filter(o => o.status === 'confirmed').length },
-    { id: 'processing', name: 'Đang xử lý', count: orders.filter(o => o.status === 'processing').length },
-    { id: 'shipped', name: 'Đang giao', count: orders.filter(o => o.status === 'shipped').length },
-    { id: 'delivered', name: 'Đã giao', count: orders.filter(o => o.status === 'delivered').length },
+    { id: 'all', name: 'Tất cả', count: orders?.length || 0 },
+    { id: 'pending', name: 'Chờ xác nhận', count: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'pending').length : 0 },
+    { id: 'confirmed', name: 'Đã xác nhận', count: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'confirmed').length : 0 },
+    { id: 'processing', name: 'Đang xử lý', count: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'processing').length : 0 },
+    { id: 'shipped', name: 'Đang giao', count: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'shipped').length : 0 },
+    { id: 'delivered', name: 'Đã giao', count: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'delivered').length : 0 },
   ]
 
   if (!user) {
@@ -352,7 +393,7 @@ export default function ProfileOrdersPage() {
                                 </div>
                                 <div className="flex items-center text-lg font-semibold text-gray-900">
                                   <CurrencyDollarIcon className="h-5 w-5 mr-1" />
-                                  {order.totalAmount.toLocaleString('vi-VN')}đ
+                                  {(order.totalAmount || 0).toLocaleString('vi-VN')}đ
                                 </div>
                               </div>
                             </div>
@@ -523,7 +564,7 @@ export default function ProfileOrdersPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-medium text-gray-900">Tổng tiền:</span>
                     <span className="text-2xl font-bold text-blue-600">
-                      {selectedOrder.totalAmount.toLocaleString('vi-VN')}đ
+                      {(selectedOrder.totalAmount || 0).toLocaleString('vi-VN')}đ
                     </span>
                   </div>
                 </div>

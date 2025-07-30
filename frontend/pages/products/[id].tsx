@@ -111,6 +111,13 @@ export default function ProductDetailPage() {
     }
   }
 
+  // Helper function to safely extract category name
+  const getCategoryName = (category: any): string => {
+    if (typeof category === 'string') return category;
+    if (category && typeof category === 'object' && 'name' in category) return category.name;
+    return 'Unknown';
+  };
+
   const handleAddToCart = () => {
     if (product) {
       // Convert product to cart item format
@@ -119,7 +126,7 @@ export default function ProductDetailPage() {
         name: product.name,
         price: product.price,
         image: product.image,
-        category: product.category
+        category: getCategoryName(product.category)
       }
       
       // Add item quantity times

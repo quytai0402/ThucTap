@@ -216,11 +216,11 @@ const AdminOrders = () => {
   };
 
   const stats = {
-    totalOrders: orders.length,
-    pendingOrders: orders.filter(o => o.status === 'pending').length,
-    processingOrders: orders.filter(o => o.status === 'processing').length,
-    completedOrders: orders.filter(o => o.status === 'delivered').length,
-    totalRevenue: orders.reduce((sum, order) => sum + order.totalAmount, 0)
+    totalOrders: orders && Array.isArray(orders) ? orders.length : 0,
+    pendingOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'pending').length : 0,
+    processingOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'processing').length : 0,
+    completedOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'delivered').length : 0,
+    totalRevenue: orders && Array.isArray(orders) ? orders.reduce((sum, order) => sum + order.totalAmount, 0) : 0
   };
 
   return (

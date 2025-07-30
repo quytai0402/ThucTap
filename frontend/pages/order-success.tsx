@@ -53,20 +53,37 @@ export default function OrderSuccessPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (orderId && user) {
+    if (orderId) {
       fetchOrderDetails()
-    } else if (!user) {
-      router.push('/login')
+    } else {
+      // If no orderId, set loading to false so we show "not found" message
+      setLoading(false)
     }
-  }, [orderId, user, router])
+  }, [orderId, router])
 
   const fetchOrderDetails = async () => {
     try {
-      const response = await api.get(`/orders/${orderId}`)
-      
-      if (response.status === 200) {
-        const data = response.data
+      // Try to fetch with auth token first
+      try {
+        const response = await api.get(`/orders/${orderId}`)
+        
+        if (response.status === 200) {
+          const data = response.data
+          setOrder(data)
+          return
+        }
+      } catch (authError) {
+        console.log('Auth fetch failed, trying guest route:', authError)
+        // If auth fails, try the guest route
+      }
+
+      // Try guest order lookup as fallback
+      const guestResponse = await fetch(`/api/guest-order?orderId=${orderId}`)
+      if (guestResponse.ok) {
+        const data = await guestResponse.json()
         setOrder(data)
+      } else {
+        console.error('Both auth and guest order lookups failed')
       }
     } catch (error) {
       console.error('Error fetching order:', error)
@@ -240,23 +257,23 @@ export default function OrderSuccessPage() {
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-600">Tạm tính</dt>
                   <dd className="text-sm font-medium text-gray-900">
-                    {(order.totalAmount - order.shippingFee).toLocaleString('vi-VN')}₫
+                    {((order.totalAmount || 0) - (order.shippingFee || 0)).toLocaleString('vi-VN')}₫
                   </dd>
                 </div>
                 <div className="flex justify-between mt-2">
                   <dt className="text-sm text-gray-600">Phí vận chuyển</dt>
                   <dd className="text-sm font-medium text-gray-900">
-                    {order.shippingFee === 0 ? (
+                    {!order.shippingFee || order.shippingFee === 0 ? (
                       <span className="text-green-600">Miễn phí</span>
                     ) : (
-                      `${order.shippingFee.toLocaleString('vi-VN')}₫`
+                      `${(order.shippingFee || 0).toLocaleString('vi-VN')}₫`
                     )}
                   </dd>
                 </div>
                 <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
                   <dt className="text-base font-medium text-gray-900">Tổng cộng</dt>
                   <dd className="text-base font-medium text-red-600">
-                    {order.totalAmount.toLocaleString('vi-VN')}₫
+                    {(order.totalAmount || 0).toLocaleString('vi-VN')}₫
                   </dd>
                 </div>
               </div>

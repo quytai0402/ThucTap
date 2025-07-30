@@ -91,7 +91,7 @@ const RealTimeDashboard: React.FC = () => {
       const activity: RecentActivity[] = [];
       
       // Add recent orders to activity
-      if (Array.isArray(recentOrders)) {
+      if (recentOrders && Array.isArray(recentOrders)) {
         recentOrders.slice(0, 3).forEach((order: any) => {
           activity.push({
             id: order._id || order.id,

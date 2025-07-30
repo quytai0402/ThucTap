@@ -527,9 +527,11 @@ export default function CheckoutPage() {
         isGuestOrder: isGuestMode
       }
 
-      // For guest orders, use the API route to avoid authentication issues
+      // For all orders, use the API route to handle both guest and authenticated users
       let order;
-      if (isGuestMode) {
+      try {
+        console.log('Sending order data:', orderData);
+        
         const result = await fetch('/api/create-order', {
           method: 'POST',
           headers: {
@@ -538,24 +540,32 @@ export default function CheckoutPage() {
           body: JSON.stringify(orderData)
         });
         
-        if (result.ok) {
-          order = await result.json();
-          clearCart();
-          router.push(`/order-success?orderId=${order._id || orderId}`);
-        } else {
-          throw new Error('Có lỗi xảy ra khi đặt hàng');
+        if (!result.ok) {
+          const errorData = await result.json();
+          console.error('Order creation failed:', errorData);
+          throw new Error(`Đặt hàng thất bại: ${errorData.message || 'Lỗi không xác định'}`);
         }
-      } else {
-        // Regular user order
-        const response = await api.post('/orders', orderData);
         
-        if (response.status === 200 || response.status === 201) {
-          order = response.data;
-          clearCart();
-          router.push(`/order-success?orderId=${order._id || orderId}`);
-        } else {
-          alert('Có lỗi xảy ra khi đặt hàng');
+        order = await result.json();
+        console.log('Order created successfully:', order);
+        
+        if (!order || !order._id) {
+          console.error('Order created but missing ID:', order);
+          throw new Error('Đơn hàng được tạo nhưng không có ID');
         }
+        
+        // Clear cart only if order was successfully created
+        clearCart();
+        
+        // Redirect to success page with the order ID
+        const orderIdToUse = order._id || orderId;
+        console.log('Redirecting to success page with orderId:', orderIdToUse);
+        
+        router.push(`/order-success?orderId=${orderIdToUse}`);
+      } catch (error: any) {
+        console.error('Error in order processing:', error);
+        alert(`Có lỗi xảy ra khi đặt hàng: ${error.message || 'Lỗi không xác định'}`);
+        throw error; // Re-throw to allow the caller to handle it
       }
     } catch (error) {
       console.error('Error processing order:', error)

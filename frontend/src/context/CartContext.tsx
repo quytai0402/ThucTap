@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import Cookies from 'js-cookie';
 
+// Helper function to safely extract category name
+const getCategoryName = (category: any): string => {
+  if (typeof category === 'string') return category;
+  if (category && typeof category === 'object' && 'name' in category) return category.name;
+  return 'Unknown';
+};
+
 interface CartItem {
   id: string;
   name: string;
@@ -55,17 +62,23 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   }, [items]);
 
   const addItem = (newItem: Omit<CartItem, 'quantity'>) => {
+    // Process category to ensure it's a string
+    const processedItem = {
+      ...newItem,
+      category: getCategoryName(newItem.category)
+    };
+    
     setItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === newItem.id);
+      const existingItem = prevItems.find(item => item.id === processedItem.id);
       
       if (existingItem) {
         return prevItems.map(item =>
-          item.id === newItem.id
+          item.id === processedItem.id
             ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       } else {
-        return [...prevItems, { ...newItem, quantity: 1 }];
+        return [...prevItems, { ...processedItem, quantity: 1 }];
       }
     });
   };

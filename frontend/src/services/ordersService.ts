@@ -176,10 +176,12 @@ class OrdersService {
   async getRecentOrders(limit = 3) {
     try {
       const response = await api.get(`/orders/recent?limit=${limit}`);
-      return response.data;
+      // Ensure we always return an array
+      const data = response.data;
+      return Array.isArray(data) ? data : (data?.orders ? data.orders : []);
     } catch (error) {
       console.error('Error fetching recent orders:', error);
-      throw error;
+      return []; // Return empty array on error
     }
   }
 
@@ -249,10 +251,25 @@ class OrdersService {
       if (dateTo) params.append('dateTo', dateTo);
       
       const response = await api.get(`/orders/stats?${params.toString()}`);
-      return response.data;
+      return response.data || {
+        totalOrders: 0,
+        pendingOrders: 0,
+        completedOrders: 0,
+        cancelledOrders: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0
+      };
     } catch (error) {
       console.error('Error fetching order stats:', error);
-      throw error;
+      // Return default stats object on error
+      return {
+        totalOrders: 0,
+        pendingOrders: 0,
+        completedOrders: 0,
+        cancelledOrders: 0,
+        totalRevenue: 0,
+        averageOrderValue: 0
+      };
     }
   }
 

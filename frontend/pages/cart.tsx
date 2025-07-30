@@ -14,6 +14,13 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline'
 
+// Helper function to safely extract category name from potentially complex objects
+const getCategoryName = (category: any): string => {
+  if (typeof category === 'string') return category;
+  if (category && typeof category === 'object' && 'name' in category) return category.name;
+  return 'Unknown';
+};
+
 export default function CartPage() {
   const { items, totalPrice, totalItems, updateQuantity, removeItem, clearCart } = useCart()
   const { user } = useAuth()
@@ -136,8 +143,8 @@ export default function CartPage() {
                             <p className="mt-1 text-sm text-gray-500">
                               {item.price.toLocaleString('vi-VN')}₫ x {item.quantity}
                             </p>
-                            <p className="mt-1 text-sm text-gray-500">
-                              Danh mục: {item.category}
+                                                        <p className="mt-1 text-sm text-gray-500">
+                              Danh mục: {getCategoryName(item.category)}
                             </p>
                           </div>
                           

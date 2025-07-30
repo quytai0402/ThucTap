@@ -25,6 +25,13 @@ interface ProductCardProps {
   className?: string;
 }
 
+// Helper function to safely extract category name
+const getCategoryName = (category: string | { _id: string; name: string; slug: string } | any): string => {
+  if (typeof category === 'string') return category;
+  if (category && typeof category === 'object' && 'name' in category) return category.name;
+  return 'Unknown';
+};
+
 const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) => {
   const { addItem } = useCart();
   const [isWishlisted, setIsWishlisted] = React.useState(false);
@@ -35,7 +42,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
       name: product.name,
       price: product.price,
       image: product.image,
-      category: typeof product.category === 'string' ? product.category : product.category.name,
+      category: getCategoryName(product.category),
     });
     toast.success('Đã thêm vào giỏ hàng!');
   };
