@@ -109,19 +109,20 @@ const Contact: React.FC = () => {
       </Head>
 
       <Layout>
-        {/* Hero Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-6">
-                Liên hệ với chúng tôi
-              </h1>
-              <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
-                Chúng tôi luôn sẵn sàng hỗ trợ và tư vấn để bạn có trải nghiệm mua sắm tốt nhất
-              </p>
-            </div>
+       {/* Hero Section */}
+        <section className="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-600 text-white py-28 overflow-hidden">
+          <div className="absolute inset-0 opacity-20 bg-[url('/images/pattern.svg')] bg-cover bg-center pointer-events-none"></div>
+
+          <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight drop-shadow-xl mb-6 break-words">
+              Kết nối với chúng tôi
+            </h1>
+            <p className="text-base sm:text-lg md:text-xl lg:text-2xl max-w-3xl mx-auto mb-10 text-white/90 leading-relaxed">
+              Luôn sẵn sàng hỗ trợ bạn mọi lúc – vì trải nghiệm mua sắm của bạn là ưu tiên hàng đầu.
+            </p>
           </div>
-        </div>
+        </section>
+
 
         {/* Contact Info */}
         <div className="py-16 bg-white">

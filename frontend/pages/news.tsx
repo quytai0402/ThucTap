@@ -1,11 +1,10 @@
 import React, { useState } from 'react'
 import Head from 'next/head'
-import Image from 'next/image'
 import Link from 'next/link'
 import Layout from '../src/components/Layout'
-import { 
-  CalendarIcon, 
-  UserIcon, 
+import {
+  CalendarIcon,
+  UserIcon,
   EyeIcon,
   TagIcon,
   MagnifyingGlassIcon,
@@ -130,13 +129,13 @@ const News: React.FC = () => {
   ]
 
   const trendingTags = [
-    'MacBook M3', 'Gaming Laptop', 'RTX 4060', 'Intel 14th Gen', 
+    'MacBook M3', 'Gaming Laptop', 'RTX 4060', 'Intel 14th Gen',
     'AMD Ryzen 7000', 'Windows 11', 'SSD NVMe', 'Dell XPS'
   ]
 
   const filteredArticles = articles.filter(article => {
     const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+      article.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === 'all' || article.category === selectedCategory
     return matchesSearch && matchesCategory
   })
@@ -159,20 +158,17 @@ const News: React.FC = () => {
               <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
                 Cập nhật những tin tức mới nhất về laptop, công nghệ và đánh giá sản phẩm
               </p>
-              
               {/* Search Bar */}
-              <div className="max-w-2xl mx-auto">
-                <div className="relative">
+             <div className="relative">
                   <input
                     type="text"
                     placeholder="Tìm kiếm bài viết..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-6 py-4 pl-12 text-gray-900 rounded-full focus:outline-none focus:ring-4 focus:ring-white/30"
+                    className="w-full px-6 py-4 pl-10 text-gray-900 rounded-full focus:outline-none focus:ring-4 focus:ring-white/30"
                   />
-                  <MagnifyingGlassIcon className="absolute left-4 top-4.5 h-6 w-6 text-gray-400" />
+                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400 pointer-events-none" />
                 </div>
-              </div>
             </div>
           </div>
         </div>
@@ -180,7 +176,7 @@ const News: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Sidebar */}
-            <div className="lg:col-span-1">
+            <aside className="lg:col-span-1">
               {/* Categories */}
               <div className="bg-white rounded-xl p-6 shadow-lg mb-8">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Danh mục</h3>
@@ -203,7 +199,6 @@ const News: React.FC = () => {
                   ))}
                 </div>
               </div>
-
               {/* Trending Tags */}
               <div className="bg-white rounded-xl p-6 shadow-lg">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Thẻ phổ biến</h3>
@@ -219,19 +214,19 @@ const News: React.FC = () => {
                   ))}
                 </div>
               </div>
-            </div>
+            </aside>
 
             {/* Main Content */}
-            <div className="lg:col-span-3">
+            <main className="lg:col-span-3">
               {/* Featured Articles */}
               {searchTerm === '' && selectedCategory === 'all' && (
-                <div className="mb-12">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Bài viết nổi bật</h2>
+                <section className="mb-12">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Bài viết nổi bật</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {featuredArticles.map((article) => (
                       <Link key={article.id} href={`/news/${article.id}`}>
-                        <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
-                          <div className="relative h-48">
+                        <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer flex flex-col h-full">
+                          <div className="relative h-48 flex items-center justify-center">
                             <div className="w-full h-full bg-gradient-to-r from-gray-200 to-gray-300 flex items-center justify-center">
                               <span className="text-gray-500">Image {article.id}</span>
                             </div>
@@ -241,14 +236,14 @@ const News: React.FC = () => {
                               </span>
                             </div>
                           </div>
-                          <div className="p-6">
-                            <h3 className="text-xl font-semibold text-gray-900 mb-3 line-clamp-2">
+                          <div className="p-6 flex flex-col flex-1">
+                            <h3 className="text-xl font-semibold text-gray-900 mb-3 line-clamp-2 text-center">
                               {article.title}
                             </h3>
-                            <p className="text-gray-600 mb-4 line-clamp-3">
+                            <p className="text-gray-600 mb-4 line-clamp-3 text-center">
                               {article.excerpt}
                             </p>
-                            <div className="flex items-center justify-between text-sm text-gray-500">
+                            <div className="flex items-center justify-between text-sm text-gray-500 mt-auto">
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center">
                                   <UserIcon className="h-4 w-4 mr-1" />
@@ -269,12 +264,12 @@ const News: React.FC = () => {
                       </Link>
                     ))}
                   </div>
-                </div>
+                </section>
               )}
 
               {/* All Articles */}
-              <div>
-                <div className="flex items-center justify-between mb-6">
+              <section>
+                <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-2">
                   <h2 className="text-2xl font-bold text-gray-900">
                     {searchTerm ? `Kết quả tìm kiếm cho "${searchTerm}"` : 'Tất cả bài viết'}
                   </h2>
@@ -287,14 +282,14 @@ const News: React.FC = () => {
                   {filteredArticles.map((article) => (
                     <Link key={article.id} href={`/news/${article.id}`}>
                       <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
-                        <div className="flex flex-col md:flex-row gap-6">
-                          <div className="md:w-64 flex-shrink-0">
+                        <div className="flex flex-col md:flex-row gap-6 items-center">
+                          <div className="md:w-64 flex-shrink-0 w-full flex items-center justify-center">
                             <div className="w-full h-40 bg-gradient-to-r from-gray-200 to-gray-300 rounded-lg flex items-center justify-center">
                               <span className="text-gray-500">Image {article.id}</span>
                             </div>
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center mb-2">
+                          <div className="flex-1 w-full">
+                            <div className="flex flex-wrap items-center mb-2 gap-2">
                               <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium mr-3">
                                 {article.categoryName}
                               </span>
@@ -306,7 +301,7 @@ const News: React.FC = () => {
                             <p className="text-gray-600 mb-4 line-clamp-2">
                               {article.excerpt}
                             </p>
-                            <div className="flex items-center justify-between text-sm text-gray-500">
+                            <div className="flex flex-wrap items-center justify-between text-sm text-gray-500 gap-2">
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center">
                                   <UserIcon className="h-4 w-4 mr-1" />
@@ -368,8 +363,8 @@ const News: React.FC = () => {
                     </div>
                   </div>
                 )}
-              </div>
-            </div>
+              </section>
+            </main>
           </div>
         </div>
 
@@ -382,16 +377,16 @@ const News: React.FC = () => {
             <p className="text-gray-600 mb-8">
               Nhận những bài viết mới nhất về công nghệ và laptop qua email
             </p>
-            <div className="max-w-md mx-auto flex">
+            <form className="max-w-md mx-auto w-full flex flex-col sm:flex-row gap-3 items-center justify-center">
               <input
                 type="email"
                 placeholder="Nhập email của bạn..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-r-lg hover:bg-blue-700 transition-colors">
+              <button className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors mt-2 sm:mt-0">
                 Đăng ký
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </Layout>
