@@ -1,36 +1,5 @@
 import api from '../utils/api';
-
-export interface Product {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  images?: string[];
-  category: string;
-  brand: string;
-  rating: number;
-  reviewCount: number;
-  inStock: boolean;
-  stockQuantity: number;
-  sold: number;
-  isNew?: boolean;
-  isHot?: boolean;
-  isSale?: boolean;
-  status: 'active' | 'inactive' | 'out_of_stock';
-  specs?: {
-    processor?: string;
-    ram?: string;
-    storage?: string;
-    graphics?: string;
-    display?: string;
-    battery?: string;
-    weight?: string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+import { Product } from '../types';
 
 export interface CreateProductData {
   name: string;
@@ -38,83 +7,64 @@ export interface CreateProductData {
   shortDescription?: string;
   price: number;
   originalPrice?: number;
-  image: string;
-  images?: string[];
+  images: string[];
   category: string;
   brand: string;
-  stock?: number;
-  stockQuantity?: number; // Support both fields for compatibility
-  isFeatured?: boolean;
-  isOnSale?: boolean;
-  isNew?: boolean;
-  isHot?: boolean;
-  isSale?: boolean;
-  status: 'active' | 'inactive' | 'out_of_stock';
+  stock: number;
   specifications?: {
-    processor?: string;
+    cpu?: string;
     ram?: string;
     storage?: string;
-    graphics?: string;
-    display?: string;
-    battery?: string;
-    weight?: string;
+    gpu?: string;
+    screen?: string;
     screenSize?: string;
     resolution?: string;
-    os?: string;
-    ports?: string[];
-    features?: string[];
-  };
-  specs?: { // Support both field names
-    processor?: string;
-    ram?: string;
-    storage?: string;
-    graphics?: string;
-    display?: string;
     battery?: string;
     weight?: string;
-    screenSize?: string;
-    resolution?: string;
     os?: string;
     ports?: string[];
     features?: string[];
   };
   tags?: string[];
+  isFeatured?: boolean;
+  isOnSale?: boolean;
 }
 
 export interface UpdateProductData extends Partial<CreateProductData> {
-  id: string;
+  status?: 'active' | 'inactive' | 'out_of_stock';
 }
 
 export interface ProductFilters {
-  search?: string;
-  category?: string;
-  brand?: string;
-  status?: string;
   page?: number;
   limit?: number;
+  category?: string;
+  brand?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  status?: string;
+  isFeatured?: boolean;
+  isOnSale?: boolean;
 }
 
 class ProductService {
-  // Get all products with filters
-  async getProducts(filters?: ProductFilters) {
+  // ===== PUBLIC ENDPOINTS (No auth required) =====
+
+  // Get all products with filtering (for customers)
+  async getProducts(filters: ProductFilters = {}) {
     try {
       const params = new URLSearchParams();
       
-      if (filters?.search) params.append('search', filters.search);
-      if (filters?.category) params.append('category', filters.category);
-      if (filters?.brand) params.append('brand', filters.brand);
-      if (filters?.status) params.append('status', filters.status);
-      if (filters?.page) params.append('page', filters.page.toString());
-      if (filters?.limit) params.append('limit', filters.limit.toString());
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
       
-      const response = await api.get(`/admin/products?${params.toString()}`);
-      
-      // Handle NestJS response format
-      if (response.data.success && Array.isArray(response.data.data)) {
-        return response.data.data;
-      }
-      
-      return response.data || [];
+      const response = await api.get(`/products?${params.toString()}`);
+      return response.data;
     } catch (error) {
       console.error('Error fetching products:', error);
       throw error;
@@ -122,14 +72,9 @@ class ProductService {
   }
 
   // Get single product by ID
-  async getProduct(id: string) {
+  async getProduct(id: string): Promise<Product> {
     try {
-      const response = await api.get(`/admin/products/${id}`);
-      
-      if (response.data.success) {
-        return response.data.data;
-      }
-      
+      const response = await api.get(`/products/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching product:', error);
@@ -137,54 +82,108 @@ class ProductService {
     }
   }
 
-  // Create new product
-  async createProduct(productData: CreateProductData) {
+  // Get product by slug
+  async getProductBySlug(slug: string): Promise<Product> {
     try {
-      // Map specifications field names from frontend to backend
-      let mappedSpecifications = {};
-      const specs = productData.specifications || productData.specs;
-      
-      if (specs) {
-        const specsAny = specs as any;
-        mappedSpecifications = {
-          cpu: specsAny.processor || specsAny.cpu || '',
-          ram: specsAny.ram || '',
-          storage: specsAny.storage || '',
-          gpu: specsAny.graphics || specsAny.gpu || '',
-          screen: specsAny.display || specsAny.screen || '',
-          screenSize: specsAny.screenSize || '',
-          resolution: specsAny.resolution || '',
-          battery: specsAny.battery || '',
-          weight: specsAny.weight || '',
-          os: specsAny.os || '',
-          ports: specsAny.ports || [],
-          features: specsAny.features || []
-        };
-      }
+      const response = await api.get(`/products/slug/${slug}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching product by slug:', error);
+      throw error;
+    }
+  }
 
-      // Map frontend data to backend format
-      const backendData = {
-        name: productData.name,
-        description: productData.description,
-        shortDescription: productData.description.substring(0, 100),
-        price: productData.price,
-        originalPrice: productData.originalPrice,
-        stock: productData.stockQuantity || productData.stock || 0,
-        category: productData.category,
-        brand: productData.brand,
-        images: productData.images || (productData.image ? [productData.image] : []),
-        specifications: mappedSpecifications,
-        tags: productData.tags || [],
-        isFeatured: productData.isNew || false,
-        isOnSale: productData.isSale || false,
-      };
+  // Get featured products
+  async getFeaturedProducts(limit = 8): Promise<Product[]> {
+    try {
+      const response = await api.get(`/products/featured?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching featured products:', error);
+      throw error;
+    }
+  }
 
-      const response = await api.post('/admin/products', backendData);
+  // Get products on sale
+  async getOnSaleProducts(limit = 8): Promise<Product[]> {
+    try {
+      const response = await api.get(`/products/on-sale?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching on-sale products:', error);
+      throw error;
+    }
+  }
+
+  // Get best sellers
+  async getBestSellers(limit = 8): Promise<Product[]> {
+    try {
+      const response = await api.get(`/products/best-sellers?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching best sellers:', error);
+      throw error;
+    }
+  }
+
+  // Get related products
+  async getRelatedProducts(productId: string, limit = 4): Promise<Product[]> {
+    try {
+      const response = await api.get(`/products/${productId}/related?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching related products:', error);
+      throw error;
+    }
+  }
+
+  // Get all brands
+  async getBrands(): Promise<string[]> {
+    try {
+      const response = await api.get('/products/brands');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching brands:', error);
+      throw error;
+    }
+  }
+
+  // ===== ADMIN ENDPOINTS (Auth required) =====
+
+  // Get all products for admin (with different filtering)
+  async getAdminProducts(filters: ProductFilters = {}) {
+    try {
+      const params = new URLSearchParams();
       
-      if (response.data.success) {
-        return response.data.data;
-      }
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
       
+      const response = await api.get(`/admin/products?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin products:', error);
+      throw error;
+    }
+  }
+
+  // Get admin product by ID
+  async getAdminProduct(id: string): Promise<Product> {
+    try {
+      const response = await api.get(`/admin/products/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin product:', error);
+      throw error;
+    }
+  }
+
+  // Create new product (Admin only)
+  async createProduct(productData: CreateProductData): Promise<Product> {
+    try {
+      const response = await api.post('/admin/products', productData);
       return response.data;
     } catch (error) {
       console.error('Error creating product:', error);
@@ -192,54 +191,10 @@ class ProductService {
     }
   }
 
-  // Update product
-  async updateProduct(id: string, productData: Partial<CreateProductData>) {
+  // Update product (Admin only)
+  async updateProduct(id: string, productData: UpdateProductData): Promise<Product> {
     try {
-      // Map frontend data to backend format
-      const backendData: any = {};
-      
-      if (productData.name) backendData.name = productData.name;
-      if (productData.description) {
-        backendData.description = productData.description;
-        backendData.shortDescription = productData.description.substring(0, 100);
-      }
-      if (productData.price) backendData.price = productData.price;
-      if (productData.originalPrice) backendData.originalPrice = productData.originalPrice;
-      if (productData.stockQuantity !== undefined || productData.stock !== undefined) {
-        backendData.stock = productData.stockQuantity || productData.stock;
-      }
-      if (productData.category) backendData.category = productData.category;
-      if (productData.brand) backendData.brand = productData.brand;
-      if (productData.images) backendData.images = productData.images;
-      else if (productData.image) backendData.images = [productData.image];
-      if (productData.specifications || productData.specs) {
-        const specs = productData.specifications || productData.specs;
-        const specsAny = specs as any;
-        backendData.specifications = {
-          cpu: specsAny.processor || specsAny.cpu || '',
-          ram: specsAny.ram || '',
-          storage: specsAny.storage || '',
-          gpu: specsAny.graphics || specsAny.gpu || '',
-          screen: specsAny.display || specsAny.screen || '',
-          screenSize: specsAny.screenSize || '',
-          resolution: specsAny.resolution || '',
-          battery: specsAny.battery || '',
-          weight: specsAny.weight || '',
-          os: specsAny.os || '',
-          ports: specsAny.ports || [],
-          features: specsAny.features || []
-        };
-      }
-      if (productData.tags) backendData.tags = productData.tags;
-      if (productData.isNew !== undefined) backendData.isFeatured = productData.isNew;
-      if (productData.isSale !== undefined) backendData.isOnSale = productData.isSale;
-
-      const response = await api.patch(`/admin/products/${id}`, backendData);
-      
-      if (response.data.success) {
-        return response.data.data;
-      }
-      
+      const response = await api.patch(`/admin/products/${id}`, productData);
       return response.data;
     } catch (error) {
       console.error('Error updating product:', error);
@@ -247,7 +202,18 @@ class ProductService {
     }
   }
 
-  // Delete product
+  // Update product status (Admin only)
+  async updateProductStatus(id: string, status: 'active' | 'inactive' | 'out_of_stock') {
+    try {
+      const response = await api.patch(`/admin/products/${id}/status`, { status });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating product status:', error);
+      throw error;
+    }
+  }
+
+  // Delete product (Admin only)
   async deleteProduct(id: string) {
     try {
       await api.delete(`/admin/products/${id}`);
@@ -257,20 +223,70 @@ class ProductService {
     }
   }
 
-  // Bulk delete products
-  async bulkDeleteProducts(ids: string[]) {
+  // Bulk delete products (Admin only)
+  async bulkDeleteProducts(productIds: string[]) {
     try {
-      await api.delete('/admin/products/bulk/delete', { 
-        data: { productIds: ids }
+      const response = await api.delete('/admin/products/bulk/delete', {
+        data: { productIds }
       });
+      return response.data;
     } catch (error) {
       console.error('Error bulk deleting products:', error);
       throw error;
     }
   }
 
+  // Bulk update product status (Admin only)
+  async bulkUpdateStatus(productIds: string[], status: 'active' | 'inactive' | 'out_of_stock') {
+    try {
+      const response = await api.patch('/admin/products/bulk/status', {
+        productIds,
+        status
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error bulk updating product status:', error);
+      throw error;
+    }
+  }
+
+  // Get admin statistics
+  async getAdminStats() {
+    try {
+      const response = await api.get('/admin/products/stats');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin stats:', error);
+      throw error;
+    }
+  }
+
+  // Get categories (for product creation/editing)
+  async getCategories() {
+    try {
+      const response = await api.get('/admin/products/categories/list');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      throw error;
+    }
+  }
+
+  // Get admin brands list
+  async getAdminBrands() {
+    try {
+      const response = await api.get('/admin/products/brands/list');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching admin brands:', error);
+      throw error;
+    }
+  }
+
+  // ===== UTILITY METHODS =====
+
   // Upload product image
-  async uploadImage(file: File) {
+  async uploadImage(file: File): Promise<string> {
     try {
       const formData = new FormData();
       formData.append('image', file);
@@ -281,36 +297,58 @@ class ProductService {
         },
       });
       
-      return response.data.url || response.data.data?.url || URL.createObjectURL(file);
+      return response.data.url || response.data.data?.url;
     } catch (error) {
       console.error('Error uploading image:', error);
-      // Return a placeholder URL for demo
-      return URL.createObjectURL(file);
-    }
-  }
-
-  // Get categories
-  async getCategories() {
-    try {
-      const response = await api.get('/categories');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching categories:', error);
       throw error;
     }
   }
 
-  // Get brands
-  async getBrands() {
-    try {
-      const response = await api.get('/products/brands');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching brands:', error);
-      throw error;
-    }
+  // Helper method to map backend product to frontend format
+  mapProductForDisplay(product: any): Product {
+    return {
+      _id: product._id,
+      id: product._id, // For backward compatibility
+      name: product.name,
+      slug: product.slug,
+      description: product.description,
+      shortDescription: product.shortDescription,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      images: product.images || [],
+      image: product.images?.[0], // For backward compatibility
+      category: product.category,
+      brand: product.brand,
+      rating: product.rating,
+      reviews: product.reviewCount || 0,
+      reviewCount: product.reviewCount,
+      stock: product.stock,
+      stockQuantity: product.stock, // For backward compatibility
+      inStock: product.stock > 0, // For backward compatibility
+      status: product.status,
+      isFeatured: product.isFeatured,
+      isOnSale: product.isOnSale,
+      isNew: product.isFeatured, // For backward compatibility
+      isHot: false, // For backward compatibility
+      isSale: product.isOnSale, // For backward compatibility
+      views: product.views,
+      sold: product.sold,
+      tags: product.tags,
+      specifications: product.specifications,
+      specs: product.specifications ? { // For backward compatibility
+        processor: product.specifications.cpu,
+        ram: product.specifications.ram,
+        storage: product.specifications.storage,
+        graphics: product.specifications.gpu,
+        display: product.specifications.screen,
+        battery: product.specifications.battery,
+        weight: product.specifications.weight,
+      } : undefined,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+    };
   }
 }
 
 export const productService = new ProductService();
-export default productService;
+export default productService; 

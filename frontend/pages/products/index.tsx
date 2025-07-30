@@ -3,9 +3,9 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import Layout from '../../src/components/Layout'
-import { Product } from '../../src/types'
+import { Product } from '@/types'
 import { useCart } from '../../src/context/CartContext'
-import api from '../../src/utils/api'
+import productService from '../../src/services/productService'
 import { ShoppingCartIcon } from '@heroicons/react/24/outline'
 
 export default function ProductsPage() {
@@ -39,19 +39,24 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true)
-      const params = new URLSearchParams()
       
-      if (filters.search) params.append('search', filters.search)
-      if (filters.category) params.append('category', filters.category)
-      if (filters.brand) params.append('brand', filters.brand)
-      if (filters.minPrice) params.append('minPrice', filters.minPrice)
-      if (filters.maxPrice) params.append('maxPrice', filters.maxPrice)
-      if (filters.sort) params.append('sort', filters.sort)
+      const searchParams = {
+        search: filters.search || undefined,
+        category: filters.category || undefined,
+        brand: filters.brand || undefined,
+        minPrice: filters.minPrice ? parseInt(filters.minPrice) : undefined,
+        maxPrice: filters.maxPrice ? parseInt(filters.maxPrice) : undefined,
+        sortBy: filters.sort || 'name',
+        page: 1,
+        limit: 20
+      }
       
-      const response = await api.get(`/products?${params.toString()}`)
-      setProducts(response.data.products || response.data || [])
+      const response = await productService.getProducts(searchParams)
+      const products = response?.data || response?.products || []
+      setProducts(products)
     } catch (error) {
       console.error('Error fetching products:', error)
+      setProducts([])
     } finally {
       setLoading(false)
     }
@@ -59,10 +64,11 @@ export default function ProductsPage() {
 
   const fetchCategories = async () => {
     try {
-      const response = await api.get('/categories')
-      setCategories(response.data || [])
+      const categories = await productService.getCategories()
+      setCategories(categories?.data || categories || [])
     } catch (error) {
       console.error('Error fetching categories:', error)
+      setCategories([])
     }
   }
 
@@ -83,7 +89,7 @@ export default function ProductsPage() {
       name: product.name,
       price: product.price,
       image: product.images?.[0] || '/images/placeholder-product.jpg',
-      category: typeof product.category === 'string' ? product.category : product.category?.name || ''
+      category: product.category || ''
     })
     
     // Show notification (optional)

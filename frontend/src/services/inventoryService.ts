@@ -1,9 +1,30 @@
 import api from '../utils/api';
 
-export interface InventoryItem {
-  id: string;
+export interface StockAdjustment {
+  _id: string;
+  product: {
+    _id: string;
+    name: string;
+    sku?: string;
+  };
+  oldQuantity: number;
+  newQuantity: number;
+  adjustmentQuantity: number;
+  adjustmentType: 'add' | 'subtract' | 'set';
+  reason: string;
+  adjustedBy: {
+    _id: string;
+    name: string;
+  };
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryProduct {
+  _id: string;
   name: string;
-  sku: string;
+  sku?: string;
   stock: number;
   price: number;
   images: string[];
@@ -16,25 +37,6 @@ export interface InventoryItem {
   updatedAt: string;
 }
 
-export interface StockAdjustment {
-  id: string;
-  product: {
-    _id: string;
-    name: string;
-    sku: string;
-  };
-  oldQuantity: number;
-  newQuantity: number;
-  adjustmentQuantity: number;
-  adjustmentType: 'add' | 'subtract' | 'set';
-  reason: string;
-  adjustedBy: {
-    _id: string;
-    name: string;
-  };
-  createdAt: string;
-}
-
 export interface UpdateStockData {
   productId: string;
   quantity: number;
@@ -42,7 +44,23 @@ export interface UpdateStockData {
   reason?: string;
 }
 
-export interface StockReport {
+export interface InventoryAlert {
+  type: 'low_stock' | 'out_of_stock';
+  message: string;
+  product: string;
+  severity: 'warning' | 'error';
+}
+
+export interface InventoryFilters {
+  page?: number;
+  limit?: number;
+  lowStock?: boolean;
+  outOfStock?: boolean;
+  search?: string;
+}
+
+export interface StockLevelReport {
+  _id: string;
   categoryName: string;
   totalProducts: number;
   totalStock: number;
@@ -51,37 +69,30 @@ export interface StockReport {
   outOfStockCount: number;
 }
 
-export interface InventoryFilters {
-  page?: number;
-  limit?: number;
-  search?: string;
-  category?: string;
-  status?: string;
-  lowStock?: boolean;
-}
-
 class InventoryService {
-  // Get inventory overview
-  async getInventory(filters?: InventoryFilters) {
+  // ===== INVENTORY STATUS & LISTING =====
+
+  // Get inventory status with filtering
+  async getInventoryStatus(filters: InventoryFilters = {}) {
     try {
       const params = new URLSearchParams();
-      if (filters?.page) params.append('page', filters.page.toString());
-      if (filters?.limit) params.append('limit', filters.limit.toString());
-      if (filters?.search) params.append('search', filters.search);
-      if (filters?.category) params.append('category', filters.category);
-      if (filters?.status) params.append('status', filters.status);
-      if (filters?.lowStock) params.append('lowStock', 'true');
-
+      
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value.toString());
+        }
+      });
+      
       const response = await api.get(`/inventory?${params.toString()}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching inventory:', error);
+      console.error('Error fetching inventory status:', error);
       throw error;
     }
   }
 
   // Get low stock products
-  async getLowStockProducts(threshold: number = 10) {
+  async getLowStockProducts(threshold = 10): Promise<InventoryProduct[]> {
     try {
       const response = await api.get(`/inventory/low-stock?threshold=${threshold}`);
       return response.data;
@@ -92,7 +103,7 @@ class InventoryService {
   }
 
   // Get out of stock products
-  async getOutOfStockProducts() {
+  async getOutOfStockProducts(): Promise<InventoryProduct[]> {
     try {
       const response = await api.get('/inventory/out-of-stock');
       return response.data;
@@ -102,23 +113,9 @@ class InventoryService {
     }
   }
 
-  // Get stock adjustments
-  async getStockAdjustments(page: number = 1, limit: number = 10, productId?: string) {
-    try {
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('limit', limit.toString());
-      if (productId) params.append('productId', productId);
+  // ===== STOCK ADJUSTMENTS =====
 
-      const response = await api.get(`/inventory/adjustments?${params.toString()}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching stock adjustments:', error);
-      throw error;
-    }
-  }
-
-  // Adjust stock
+  // Adjust product stock
   async adjustStock(adjustmentData: UpdateStockData) {
     try {
       const response = await api.post('/inventory/adjust', adjustmentData);
@@ -129,8 +126,30 @@ class InventoryService {
     }
   }
 
+  // Get stock adjustment history
+  async getStockAdjustments(page = 1, limit = 20, productId?: string) {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+      
+      if (productId) {
+        params.append('productId', productId);
+      }
+      
+      const response = await api.get(`/inventory/adjustments?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching stock adjustments:', error);
+      throw error;
+    }
+  }
+
+  // ===== INVENTORY REPORTS =====
+
   // Get stock levels report
-  async getStockLevelsReport() {
+  async getStockLevelsReport(): Promise<StockLevelReport[]> {
     try {
       const response = await api.get('/inventory/reports/stock-levels');
       return response.data;
@@ -141,12 +160,13 @@ class InventoryService {
   }
 
   // Get stock movements report
-  async getStockMovementsReport(startDate?: string, endDate?: string) {
+  async getStockMovementsReport(startDate?: string, endDate?: string): Promise<StockAdjustment[]> {
     try {
       const params = new URLSearchParams();
+      
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
-
+      
       const response = await api.get(`/inventory/reports/stock-movements?${params.toString()}`);
       return response.data;
     } catch (error) {
@@ -155,6 +175,8 @@ class InventoryService {
     }
   }
 
+  // ===== ALERTS & NOTIFICATIONS =====
+
   // Get inventory alerts
   async getInventoryAlerts() {
     try {
@@ -162,6 +184,113 @@ class InventoryService {
       return response.data;
     } catch (error) {
       console.error('Error fetching inventory alerts:', error);
+      throw error;
+    }
+  }
+
+  // ===== UTILITY METHODS =====
+
+  // Bulk stock adjustment
+  async bulkAdjustStock(adjustments: UpdateStockData[]) {
+    try {
+      const promises = adjustments.map(adjustment => this.adjustStock(adjustment));
+      const results = await Promise.allSettled(promises);
+      
+      const successful = results.filter(result => result.status === 'fulfilled').length;
+      const failed = results.filter(result => result.status === 'rejected').length;
+      
+      return {
+        successful,
+        failed,
+        total: adjustments.length,
+        results
+      };
+    } catch (error) {
+      console.error('Error in bulk stock adjustment:', error);
+      throw error;
+    }
+  }
+
+  // Get inventory summary
+  async getInventorySummary() {
+    try {
+      const [
+        inventoryStatus,
+        lowStockProducts,
+        outOfStockProducts,
+        alerts
+      ] = await Promise.all([
+        this.getInventoryStatus({ limit: 1 }),
+        this.getLowStockProducts(),
+        this.getOutOfStockProducts(),
+        this.getInventoryAlerts()
+      ]);
+
+      return {
+        totalProducts: inventoryStatus.pagination?.total || 0,
+        lowStockCount: lowStockProducts.length,
+        outOfStockCount: outOfStockProducts.length,
+        alertsCount: alerts.alerts?.length || 0,
+        lowStockProducts: lowStockProducts.slice(0, 5), // Top 5
+        outOfStockProducts: outOfStockProducts.slice(0, 5), // Top 5
+        recentAlerts: alerts.alerts?.slice(0, 5) || []
+      };
+    } catch (error) {
+      console.error('Error fetching inventory summary:', error);
+      throw error;
+    }
+  }
+
+  // Format stock adjustment for display
+  formatStockAdjustment(adjustment: StockAdjustment) {
+    const changeAmount = adjustment.newQuantity - adjustment.oldQuantity;
+    const changeType = changeAmount > 0 ? 'increase' : 'decrease';
+    const changeIcon = changeAmount > 0 ? '↗️' : '↘️';
+    
+    return {
+      ...adjustment,
+      changeAmount: Math.abs(changeAmount),
+      changeType,
+      changeIcon,
+      formattedDate: new Date(adjustment.createdAt).toLocaleDateString(),
+      formattedTime: new Date(adjustment.createdAt).toLocaleTimeString(),
+    };
+  }
+
+  // Calculate reorder levels (simple algorithm)
+  calculateReorderLevel(product: InventoryProduct, averageDailySales = 1) {
+    const leadTimeDays = 7; // Assume 7 days lead time
+    const safetyStock = averageDailySales * 3; // 3 days safety stock
+    const reorderLevel = (averageDailySales * leadTimeDays) + safetyStock;
+    
+    return {
+      reorderLevel: Math.ceil(reorderLevel),
+      isLowStock: product.stock <= reorderLevel,
+      daysRemaining: Math.floor(product.stock / averageDailySales),
+      recommendation: product.stock <= reorderLevel ? 'reorder_now' : 'sufficient'
+    };
+  }
+
+  // Export inventory data
+  async exportInventoryData(format: 'csv' | 'excel' = 'csv') {
+    try {
+      const response = await api.get(`/inventory/export?format=${format}`, {
+        responseType: 'blob'
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `inventory_${new Date().toISOString().split('T')[0]}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      return { success: true, message: 'Inventory data exported successfully' };
+    } catch (error) {
+      console.error('Error exporting inventory data:', error);
       throw error;
     }
   }

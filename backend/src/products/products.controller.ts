@@ -23,7 +23,7 @@ export class ProductsController {
   ) {}
 
   @Post()
-  // @UseGuards(JwtAuthGuard) // Temporarily disabled for testing
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new product' })
   @ApiBearerAuth()
   create(@Body() createProductDto: CreateProductDto) {
@@ -116,7 +116,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  // @UseGuards(JwtAuthGuard) // Temporarily disabled for testing
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update product' })
   @ApiBearerAuth()
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
@@ -124,7 +124,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  // @UseGuards(JwtAuthGuard) // Temporarily disabled for testing
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Delete product' })
   @ApiBearerAuth()
   remove(@Param('id') id: string) {

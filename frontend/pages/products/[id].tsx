@@ -119,7 +119,7 @@ export default function ProductDetailPage() {
         name: product.name,
         price: product.price,
         image: product.image,
-        category: typeof product.category === 'string' ? product.category : product.category.name
+        category: product.category
       }
       
       // Add item quantity times

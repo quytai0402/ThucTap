@@ -14,7 +14,44 @@ import {
   TagIcon,
   StarIcon
 } from '@heroicons/react/24/outline';
-import { productService, Product, CreateProductData } from '../../src/services/productService';
+import productService from '../../src/services/productService';
+
+interface Product {
+  _id: string;
+  id: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  images: string[];
+  image: string;
+  category: string;
+  brand: string;
+  stock: number;
+  stockQuantity: number;
+  inStock: boolean;
+  isHot: boolean;
+  isNew?: boolean;
+  isSale?: boolean;
+  status: 'active' | 'inactive';
+  description: string;
+  rating: number;
+  reviews: number;
+  reviewCount: number;
+  sold: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface CreateProductData {
+  name: string;
+  price: number;
+  category: string;
+  brand: string;
+  stock: number;
+  stockQuantity?: number;
+  description: string;
+  images?: string[];
+}
 
 const AdminProducts = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,7 +113,10 @@ const AdminProducts = () => {
         await productService.updateProduct(editingProduct.id, data);
       } else {
         // Create new product
-        await productService.createProduct(data);
+        await productService.createProduct({
+          ...data,
+          images: data.images || []
+        });
       }
       
       // Reload products
@@ -97,14 +137,20 @@ const AdminProducts = () => {
       } else {
         const newProduct: Product = {
           ...data,
+          _id: `PRD${Date.now()}`,
           id: `PRD${Date.now()}`,
+          image: data.images?.[0] || '',
           rating: 0,
+          reviews: 0,
           reviewCount: 0,
           stockQuantity: data.stockQuantity || data.stock || 0,
           inStock: (data.stockQuantity || data.stock || 0) > 0,
+          isHot: false,
+          status: 'active' as const,
           sold: 0,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          images: data.images || []
         };
         setProducts(prev => [newProduct, ...prev]);
       }

@@ -82,6 +82,31 @@ export class OrdersController {
     return this.ordersService.findByOrderNumber(orderNumber);
   }
 
+  @Get('my-orders')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current user orders' })
+  @ApiBearerAuth()
+  getMyOrders(@Request() req) {
+    return this.ordersService.findByCustomer(req.user.sub);
+  }
+
+  @Get('recent')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get recent orders for customer' })
+  @ApiBearerAuth()
+  getRecentOrders(@Request() req, @Query('limit') limit?: string) {
+    const limitNum = limit ? parseInt(limit) : 3;
+    return this.ordersService.getRecentOrders(req.user.sub, limitNum);
+  }
+
+  @Get('customer-stats')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get customer order statistics' })
+  @ApiBearerAuth()
+  getCustomerStats(@Request() req) {
+    return this.ordersService.getCustomerStats(req.user.sub);
+  }
+
   @Get('customer/:customerId')
   @ApiOperation({ summary: 'Get orders by customer ID' })
   findByCustomer(
@@ -96,14 +121,6 @@ export class OrdersController {
   @ApiOperation({ summary: 'Get order by ID' })
   findOne(@Param('id') id: string) {
     return this.ordersService.findOne(id);
-  }
-
-  @Get('my-orders')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get current user orders' })
-  @ApiBearerAuth()
-  getMyOrders(@Request() req) {
-    return this.ordersService.findByCustomer(req.user.sub);
   }
 
   @Patch(':id/status')
@@ -139,22 +156,7 @@ export class OrdersController {
     return this.ordersService.addTrackingNumber(id, body.trackingNumber);
   }
 
-  @Get('customer-stats')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get customer order statistics' })
-  @ApiBearerAuth()
-  getCustomerStats(@Request() req) {
-    return this.ordersService.getCustomerStats(req.user.sub);
-  }
 
-  @Get('recent')
-  @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get recent orders for customer' })
-  @ApiBearerAuth()
-  getRecentOrders(@Request() req, @Query('limit') limit?: string) {
-    const limitNum = limit ? parseInt(limit) : 3;
-    return this.ordersService.getRecentOrders(req.user.sub, limitNum);
-  }
 
   @Get(':id/tracking')
   @UseGuards(JwtAuthGuard)

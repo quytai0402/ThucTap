@@ -1,7 +1,16 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Layout from '../src/components/Layout';
+import paymentService from '../src/services/paymentService';
 import { VNPayService } from '../src/services/vnpayService';
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ArrowPathIcon,
+  HomeIcon,
+  ShoppingCartIcon
+} from '@heroicons/react/24/outline';
+import Link from 'next/link';
 
 interface PaymentResult {
   success: boolean;
@@ -19,9 +28,15 @@ export default function PaymentReturn() {
 
   useEffect(() => {
     if (router.isReady) {
+      handlePaymentReturn();
+    }
+  }, [router.isReady]);
+
+  const handlePaymentReturn = async () => {
+    try {
       const query = router.query;
       
-      // Verify VNPay response
+      // Verify VNPay response first
       const isValid = VNPayService.verifyReturnUrl(query as { [key: string]: string });
       
       if (!isValid) {
@@ -37,61 +52,62 @@ export default function PaymentReturn() {
         return;
       }
 
-      // Parse kết quả
-      const responseCode = query.vnp_ResponseCode as string;
-      const { success, message } = VNPayService.parseResponseCode(responseCode);
-      
-      const paymentResult: PaymentResult = {
-        success,
-        orderId: query.vnp_TxnRef as string,
-        amount: parseInt(query.vnp_Amount as string) / 100, // VNPay trả về * 100
-        message,
-        transactionId: query.vnp_TransactionNo as string,
-        payDate: query.vnp_PayDate as string
-      };
-
-      setResult(paymentResult);
-      setLoading(false);
-
-      // Cập nhật trạng thái đơn hàng trong database
-      if (success) {
-        updateOrderStatus(paymentResult);
-      }
-    }
-  }, [router.isReady, router.query]);
-
-  const updateOrderStatus = async (paymentResult: PaymentResult) => {
-    try {
-      const response = await fetch('/api/orders/update-payment-status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId: paymentResult.orderId,
-          status: paymentResult.success ? 'paid' : 'failed',
-          transactionId: paymentResult.transactionId,
-          paymentMethod: 'vnpay',
-          amount: paymentResult.amount
-        }),
+      // Use payment service to handle VNPay return
+      const vnpayResult = await paymentService.handleVNPayReturn({
+        vnp_TxnRef: query.vnp_TxnRef as string,
+        vnp_ResponseCode: query.vnp_ResponseCode as string,
+        vnp_TransactionNo: query.vnp_TransactionNo as string,
+        vnp_Amount: query.vnp_Amount as string,
+        vnp_BankCode: query.vnp_BankCode as string,
+        vnp_PayDate: query.vnp_PayDate as string
       });
 
-      if (!response.ok) {
-        console.error('Failed to update order status');
-      } else {
-        // Nếu thanh toán thành công, chuyển đến order-success
+      if (vnpayResult.success) {
+        // Check payment status to confirm
+        const statusCheck = await paymentService.checkPaymentStatus(query.vnp_TxnRef as string);
+        
+        const responseCode = query.vnp_ResponseCode as string;
+        const { success, message } = VNPayService.parseResponseCode(responseCode);
+        
+        const paymentResult: PaymentResult = {
+          success: statusCheck.isPaid || false,
+          orderId: query.vnp_TxnRef as string,
+          amount: parseInt(query.vnp_Amount as string) / 100,
+          message: statusCheck.message || message,
+          transactionId: query.vnp_TransactionNo as string,
+          payDate: query.vnp_PayDate as string
+        };
+
+        setResult(paymentResult);
+
+        // Redirect to success page if payment successful
         if (paymentResult.success) {
-          // Clear checkout session
-          sessionStorage.removeItem('checkoutOrderId');
-          
-          // Redirect to order-success page
           setTimeout(() => {
             router.push(`/order-success?orderId=${paymentResult.orderId}`);
-          }, 2000); // Delay 2s để user đọc thông báo
+          }, 2000);
         }
+      } else {
+        setResult({
+          success: false,
+          orderId: query.vnp_TxnRef as string || '',
+          amount: parseInt(query.vnp_Amount as string) / 100 || 0,
+          message: vnpayResult.message || 'Thanh toán thất bại',
+          transactionId: query.vnp_TransactionNo as string || '',
+          payDate: query.vnp_PayDate as string || ''
+        });
       }
     } catch (error) {
-      console.error('Error updating order status:', error);
+      console.error('Error processing payment return:', error);
+      setResult({
+        success: false,
+        orderId: '',
+        amount: 0,
+        message: 'Có lỗi xảy ra khi xử lý thanh toán',
+        transactionId: '',
+        payDate: ''
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,7 +136,7 @@ export default function PaymentReturn() {
       <Layout>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <ArrowPathIcon className="mx-auto h-12 w-12 text-blue-600 animate-spin" />
             <p className="mt-4 text-gray-600">Đang xử lý kết quả thanh toán...</p>
           </div>
         </div>
@@ -136,17 +152,9 @@ export default function PaymentReturn() {
             {/* Icon và Status */}
             <div className="text-center mb-8">
               {result?.success ? (
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
-                  <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                  </svg>
-                </div>
+                <CheckCircleIcon className="mx-auto h-16 w-16 text-green-500 mb-4" />
               ) : (
-                <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
-                  <svg className="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
-                  </svg>
-                </div>
+                <XCircleIcon className="mx-auto h-16 w-16 text-red-500 mb-4" />
               )}
               
               <h1 className={`text-2xl font-bold ${result?.success ? 'text-green-600' : 'text-red-600'}`}>
@@ -204,35 +212,58 @@ export default function PaymentReturn() {
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               {result?.success ? (
                 <>
-                  <button
-                    onClick={() => router.push('/orders')}
-                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                  <Link
+                    href="/orders"
+                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors text-center inline-flex items-center justify-center"
                   >
+                    <ShoppingCartIcon className="h-5 w-5 mr-2" />
                     Xem đơn hàng
-                  </button>
-                  <button
-                    onClick={() => router.push('/')}
-                    className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                  </Link>
+                  <Link
+                    href="/"
+                    className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors text-center inline-flex items-center justify-center"
                   >
+                    <HomeIcon className="h-5 w-5 mr-2" />
                     Tiếp tục mua sắm
-                  </button>
+                  </Link>
                 </>
               ) : (
                 <>
-                  <button
-                    onClick={() => router.push('/checkout')}
-                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                  <Link
+                    href="/checkout"
+                    className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors text-center"
                   >
                     Thử lại
-                  </button>
-                  <button
-                    onClick={() => router.push('/')}
-                    className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                  </Link>
+                  <Link
+                    href="/"
+                    className="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors text-center inline-flex items-center justify-center"
                   >
+                    <HomeIcon className="h-5 w-5 mr-2" />
                     Về trang chủ
-                  </button>
+                  </Link>
                 </>
               )}
+            </div>
+
+            {/* Lưu ý */}
+            <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Lưu ý quan trọng:</h3>
+              <ul className="text-sm text-gray-600 space-y-1">
+                {result?.success ? (
+                  <>
+                    <li>• Đơn hàng sẽ được xử lý trong vòng 24 giờ</li>
+                    <li>• Bạn sẽ nhận được email xác nhận</li>
+                    <li>• Liên hệ hotline nếu cần hỗ trợ</li>
+                  </>
+                ) : (
+                  <>
+                    <li>• Kiểm tra lại thông tin thanh toán</li>
+                    <li>• Đảm bảo tài khoản có đủ số dư</li>
+                    <li>• Liên hệ ngân hàng nếu cần thiết</li>
+                  </>
+                )}
+              </ul>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../src/components/AdminLayout';
-import analyticsService from '../../src/services/analyticsService';
+import { analyticsService } from '../../src/services/analyticsService';
 import {
   CalendarIcon,
   ArrowDownTrayIcon,
@@ -105,32 +105,32 @@ const AdminAnalytics = () => {
 
         setAnalyticsData({
           revenue: {
-            total: dashboardStats?.totalRevenue || 0,
-            growth: salesAnalytics?.growth || 0,
-            data: salesAnalytics?.data || salesAnalytics?.chartData?.data || [],
-            labels: salesAnalytics?.labels || salesAnalytics?.chartData?.labels || []
+            total: (dashboardStats as any)?.totalRevenue || 0,
+            growth: (salesAnalytics as any)?.growth || 0,
+            data: (salesAnalytics as any)?.data || (salesAnalytics as any)?.chartData?.data || [],
+            labels: (salesAnalytics as any)?.labels || (salesAnalytics as any)?.chartData?.labels || []
           },
           orders: {
-            total: dashboardStats?.totalOrders || 0,
-            growth: salesAnalytics?.orderGrowth || 0,
-            data: salesAnalytics?.orderData || salesAnalytics?.chartData?.orderData || [],
-            labels: salesAnalytics?.labels || salesAnalytics?.chartData?.labels || []
+            total: (dashboardStats as any)?.totalOrders || 0,
+            growth: (salesAnalytics as any)?.orderGrowth || 0,
+            data: (salesAnalytics as any)?.orderData || (salesAnalytics as any)?.chartData?.orderData || [],
+            labels: (salesAnalytics as any)?.labels || (salesAnalytics as any)?.chartData?.labels || []
           },
           customers: {
-            total: dashboardStats?.totalCustomers || dashboardStats?.totalUsers || 0,
-            growth: customerAnalytics?.growth || 0,
-            new: customerAnalytics?.newCustomers || 0,
-            returning: customerAnalytics?.returningCustomers || 0
+            total: (dashboardStats as any)?.totalCustomers || (dashboardStats as any)?.totalUsers || 0,
+            growth: (customerAnalytics as any)?.growth || 0,
+            new: (customerAnalytics as any)?.newCustomers || 0,
+            returning: (customerAnalytics as any)?.returningCustomers || 0
           },
           products: {
-            topSelling: productAnalytics?.topProducts || productAnalytics?.topSellingProducts || [],
-            categories: productAnalytics?.categories || productAnalytics?.categoryPerformance || []
+            topSelling: (productAnalytics as any)?.topProducts || (productAnalytics as any)?.topSellingProducts || [],
+            categories: (productAnalytics as any)?.categories || (productAnalytics as any)?.categoryPerformance || []
           },
           traffic: {
-            views: dashboardStats?.totalViews || 0,
-            visitors: dashboardStats?.totalVisitors || 0,
-            bounceRate: dashboardStats?.bounceRate || 0,
-            avgSession: dashboardStats?.avgSession || '0m 0s'
+            views: (dashboardStats as any)?.totalViews || 0,
+            visitors: (dashboardStats as any)?.totalVisitors || 0,
+            bounceRate: (dashboardStats as any)?.bounceRate || 0,
+            avgSession: (dashboardStats as any)?.avgSession || '0m 0s'
           }
         });
       } catch (err) {

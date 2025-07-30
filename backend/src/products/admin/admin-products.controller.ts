@@ -15,9 +15,14 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ProductsService, CreateProductDto, UpdateProductDto } from '../products.service';
 import { ProductStatus } from '../../common/schemas/product.schema';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../auth/guards/roles.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { UserRole } from '../../common/schemas/user.schema';
 
 @ApiTags('admin-products')
 @Controller('admin/products')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
 export class AdminProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
@@ -108,7 +113,6 @@ export class AdminProductsController {
   }
 
   @Post()
-  // @UseGuards(JwtAuthGuard) // Enable when authentication is ready
   @ApiOperation({ summary: 'Create a new product (Admin only)' })
   @ApiBearerAuth()
   async create(@Body() createProductDto: CreateProductDto) {
@@ -128,7 +132,6 @@ export class AdminProductsController {
   }
 
   @Patch(':id')
-  // @UseGuards(JwtAuthGuard) // Enable when authentication is ready
   @ApiOperation({ summary: 'Update product (Admin only)' })
   @ApiBearerAuth()
   async update(
@@ -157,7 +160,6 @@ export class AdminProductsController {
   }
 
   @Patch(':id/status')
-  // @UseGuards(JwtAuthGuard) // Enable when authentication is ready
   @ApiOperation({ summary: 'Update product status (Admin only)' })
   @ApiBearerAuth()
   async updateStatus(
@@ -204,7 +206,6 @@ export class AdminProductsController {
   }
 
   @Delete(':id')
-  // @UseGuards(JwtAuthGuard) // Enable when authentication is ready
   @ApiOperation({ summary: 'Delete product (Admin only)' })
   @ApiBearerAuth()
   async remove(@Param('id') id: string) {
@@ -223,7 +224,6 @@ export class AdminProductsController {
   }
 
   @Delete('bulk/delete')
-  // @UseGuards(JwtAuthGuard) // Enable when authentication is ready
   @ApiOperation({ summary: 'Bulk delete products (Admin only)' })
   @ApiBearerAuth()
   async bulkDelete(@Body('productIds') productIds: string[]) {
@@ -243,7 +243,6 @@ export class AdminProductsController {
   }
 
   @Patch('bulk/status')
-  // @UseGuards(JwtAuthGuard) // Enable when authentication is ready
   @ApiOperation({ summary: 'Bulk update product status (Admin only)' })
   @ApiBearerAuth()
   async bulkUpdateStatus(

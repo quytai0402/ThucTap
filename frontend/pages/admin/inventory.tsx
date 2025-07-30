@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import AdminLayout from '../../src/components/AdminLayout'
 import { withAuth } from '../../src/components/withAuth'
-import inventoryService from '../../src/services/inventoryService'
+import { inventoryService } from '../../src/services/inventoryService'
 import { 
   CubeIcon,
   MagnifyingGlassIcon,
@@ -45,19 +45,55 @@ const AdminInventory: React.FC = () => {
     fetchInventory()
   }, [])
 
-  const fetchInventory = async () => {
+    const fetchInventory = async () => {
     try {
-      const response = await inventoryService.getInventory();
-      const inventoryData = response.data || response || [];
-      // Ensure we have an array
-      setInventory(Array.isArray(inventoryData) ? inventoryData : []);
+      setLoading(true);
+      
+      const filters = {
+        page: 1,
+        limit: 100,
+        search: searchTerm || undefined,
+        lowStock: filterStatus === 'low_stock' ? true : undefined,
+        outOfStock: filterStatus === 'out_of_stock' ? true : undefined
+      };
+      
+      const [inventoryData, lowStockData, outOfStockData, alertsData] = await Promise.all([
+        inventoryService.getInventoryStatus(filters),
+        inventoryService.getLowStockProducts(10),
+        inventoryService.getOutOfStockProducts(),
+        inventoryService.getInventoryAlerts()
+      ]);
+
+      // Transform data to match interface
+      const transformedData = (inventoryData.products || inventoryData || []).map((item: any) => ({
+        id: item._id,
+        productName: item.name,
+        sku: item.sku || `SKU-${item._id.slice(-6).toUpperCase()}`,
+        category: item.category?.name || 'Không có danh mục',
+        currentStock: item.stock || 0,
+        minimumStock: item.lowStockThreshold || 10,
+        reservedStock: 0, // This would need to be calculated from pending orders
+        availableStock: item.stock || 0,
+        unitPrice: item.price || 0,
+        totalValue: (item.stock || 0) * (item.price || 0),
+        location: item.location || 'Kho chính',
+        lastStockUpdate: item.updatedAt || new Date().toISOString(),
+        status: item.stock === 0 ? 'out_of_stock' : 
+                item.stock <= (item.lowStockThreshold || 10) ? 'low_stock' : 'in_stock',
+        supplier: item.supplier || 'Chưa xác định'
+      }));
+
+      setInventory(transformedData);
+      console.log('Inventory data:', { inventoryData, lowStockData, outOfStockData, alertsData });
+      
     } catch (error) {
       console.error('Error fetching inventory:', error);
+      // Set mock data for demo if API fails
       setInventory([]);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const filteredInventory = Array.isArray(inventory) ? inventory.filter(item => {
     const matchesSearch = item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||

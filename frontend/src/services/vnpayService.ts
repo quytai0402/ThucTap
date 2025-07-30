@@ -166,3 +166,6 @@ export class VNPayService {
     });
   }
 }
+
+export const vnpayService = new VNPayService();
+export default vnpayService;

@@ -68,11 +68,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           avatar: userData.avatar,
         });
       } else {
+        // Only remove token if we get a response but no data
         Cookies.remove('token');
+        setUser(null);
       }
     } catch (error) {
       console.error('Token verification failed:', error);
-      Cookies.remove('token');
+      
+      // Only remove token if it's a 401 (unauthorized) error
+      if ((error as any)?.response?.status === 401) {
+        console.log('Token expired or invalid, removing...');
+        Cookies.remove('token');
+        setUser(null);
+      } else {
+        // For other errors (like network issues), keep the token
+        console.log('Network or server error, keeping token for retry');
+        // Don't setUser(null) here - keep previous state
+      }
     } finally {
       setIsLoading(false);
     }

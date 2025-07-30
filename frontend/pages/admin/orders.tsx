@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../src/components/AdminLayout';
-import { orderService } from '../../src/services/orderService';
+import { ordersService } from '../../src/services/ordersService';
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -58,13 +58,13 @@ const AdminOrders = () => {
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const response = await orderService.getOrders();
-      const ordersData = Array.isArray(response) ? response : ((response as any)?.data || []);
+      const response = await ordersService.getAdminOrders({ page: 1, limit: 100 });
+      const ordersData = response?.orders || [];
       setOrders(ordersData.map((order: any) => ({
-        id: order.id || order._id,
-        customerName: order.customerName || 'N/A',
-        customerEmail: order.customerEmail || '',
-        customerPhone: order.customerPhone || '',
+        id: order._id || order.id,
+        customerName: order.customer?.fullName || order.customer?.name || 'N/A',
+        customerEmail: order.customer?.email || '',
+        customerPhone: order.customer?.phone || '',
         items: order.items || [],
         totalAmount: order.total || order.totalAmount || 0,
         status: order.status || 'pending',

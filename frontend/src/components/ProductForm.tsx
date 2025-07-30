@@ -5,7 +5,18 @@ import {
   PlusIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
-import { CreateProductData, Product } from '../services/productService';
+import { Product } from '../types';
+import { CreateProductData } from '../services/productService';
+
+interface ExtendedProductData extends CreateProductData {
+  image: string;
+  stockQuantity: number;
+  status: 'active' | 'inactive';
+  isNew?: boolean;
+  isHot?: boolean;
+  isSale?: boolean;
+  specs?: Record<string, any>;
+}
 
 interface ProductFormProps {
   isOpen: boolean;
@@ -22,7 +33,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   product,
   isLoading = false
 }) => {
-  const [formData, setFormData] = useState<CreateProductData>({
+  const [formData, setFormData] = useState<ExtendedProductData>({
     name: '',
     description: '',
     price: 0,
@@ -31,6 +42,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
     images: [],
     category: '',
     brand: '',
+    stock: 0,
     stockQuantity: 0,
     isNew: false,
     isHot: false,
@@ -68,6 +80,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         images: product.images || [],
         category: typeof product.category === 'string' ? product.category : (product.category as any)?.name || '',
         brand: product.brand,
+        stock: product.stock,
         stockQuantity: product.stockQuantity,
         isNew: product.isNew || false,
         isHot: product.isHot || false,
@@ -101,6 +114,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         images: [],
         category: '',
         brand: '',
+        stock: 0,
         stockQuantity: 0,
         isNew: false,
         isHot: false,

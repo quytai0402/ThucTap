@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { uploadService } from '../services';
+import { uploadService } from '../services/uploadService';
 
 interface ImageUploadProps {
   onUpload?: (url: string) => void;
@@ -35,7 +35,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
         // Upload multiple files
         const result = await uploadService.uploadImages(files);
-        const urls = result.files.map(file => uploadService.getFileUrl(file.url));
+        const urls = result.data.map(file => file.url);
         setUploadedUrls(urls);
         
         if (onUpload && urls.length > 0) {
@@ -58,7 +58,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
         }
 
         const result = await uploadService.uploadImage(file);
-        const url = uploadService.getFileUrl(result.url);
+        const url = result.data.url;
         setUploadedUrls([url]);
         
         if (onUpload) {
