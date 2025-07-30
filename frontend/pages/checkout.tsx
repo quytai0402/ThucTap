@@ -8,6 +8,7 @@ import { useAuth } from '../src/context/AuthContext'
 import api from '../src/utils/api'
 import { VNPayService } from '../src/services/vnpayService'
 import { VNPAY_CONFIG } from '../src/config/vnpay'
+import GuestInfoModal, { GuestInfo } from '../src/components/GuestInfoModal'
 import { 
   CreditCardIcon,
   TruckIcon,
@@ -98,7 +99,7 @@ export default function CheckoutPage() {
     wardName: '',
     note: ''
   })
-
+  
   const [selectedPayment, setSelectedPayment] = useState('cod')
   const [isProcessing, setIsProcessing] = useState(false)
   const [errors, setErrors] = useState<{[key: string]: string}>({})
@@ -171,15 +172,27 @@ export default function CheckoutPage() {
     }
   }, [realTimeChecker])
 
+  // State for guest mode
+  const [isGuestMode, setIsGuestMode] = useState(false)
+  const [showGuestModal, setShowGuestModal] = useState(false)
+  const [guestInfo, setGuestInfo] = useState<ShippingAddress | null>(null)
+  
+  // Update shipping address if guest info is set
   useEffect(() => {
-    if (!user) {
-      router.push('/login?redirect=/checkout')
-      return
+    if (guestInfo) {
+      setShippingAddress(guestInfo)
     }
-    
+  }, [guestInfo])
+
+  useEffect(() => {
     if (items.length === 0) {
       router.push('/cart')
       return
+    }
+    
+    if (!user) {
+      // Don't redirect - we'll handle this with the guest checkout
+      setIsGuestMode(true)
     }
   }, [user, items.length, router])
 
@@ -454,6 +467,12 @@ export default function CheckoutPage() {
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    // If guest mode and no guest info, show the modal to collect guest info
+    if (isGuestMode && !guestInfo) {
+      setShowGuestModal(true)
+      return
+    }
+    
     if (!validateForm()) return
 
     // For credit card, process payment first
@@ -483,6 +502,11 @@ export default function CheckoutPage() {
     }
   }
 
+  const handleGuestInfoSubmit = (info: GuestInfo) => {
+    setGuestInfo(info)
+    setShowGuestModal(false)
+  }
+  
   const processOrder = async (orderId: string) => {
     try {
       const orderData = {
@@ -499,17 +523,39 @@ export default function CheckoutPage() {
         paymentMethod: selectedPayment,
         totalAmount: finalTotal,
         shippingFee,
-        note: shippingAddress.note
+        note: shippingAddress.note,
+        isGuestOrder: isGuestMode
       }
 
-      const response = await api.post('/orders', orderData)
-
-      if (response.status === 200 || response.status === 201) {
-        const order = response.data
-        clearCart()
-        router.push(`/order-success?orderId=${order._id || orderId}`)
+      // For guest orders, use the API route to avoid authentication issues
+      let order;
+      if (isGuestMode) {
+        const result = await fetch('/api/create-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(orderData)
+        });
+        
+        if (result.ok) {
+          order = await result.json();
+          clearCart();
+          router.push(`/order-success?orderId=${order._id || orderId}`);
+        } else {
+          throw new Error('Có lỗi xảy ra khi đặt hàng');
+        }
       } else {
-        alert('Có lỗi xảy ra khi đặt hàng')
+        // Regular user order
+        const response = await api.post('/orders', orderData);
+        
+        if (response.status === 200 || response.status === 201) {
+          order = response.data;
+          clearCart();
+          router.push(`/order-success?orderId=${order._id || orderId}`);
+        } else {
+          alert('Có lỗi xảy ra khi đặt hàng');
+        }
       }
     } catch (error) {
       console.error('Error processing order:', error)
@@ -771,7 +817,7 @@ export default function CheckoutPage() {
     }
   }
 
-      if (!user || items.length === 0) {
+      if (items.length === 0) {
     return <Layout><div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div></div></Layout>
   }
 
@@ -780,6 +826,43 @@ export default function CheckoutPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Thanh toán</h1>
+          
+          {isGuestMode && (
+            <div className="mt-2 bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3 flex-1 md:flex md:justify-between">
+                  <p className="text-sm text-blue-700">
+                    {guestInfo ? 
+                      `Bạn đang đặt hàng với thông tin: ${guestInfo.fullName} (${guestInfo.phone})` : 
+                      'Bạn chưa đăng nhập. Vui lòng nhập thông tin vận chuyển khi hoàn tất đặt hàng.'}
+                  </p>
+                  {!guestInfo && (
+                    <p className="mt-3 text-sm md:mt-0 md:ml-6">
+                      <button 
+                        onClick={() => setShowGuestModal(true)}
+                        className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600"
+                      >
+                        Nhập ngay
+                      </button>
+                      <span className="mx-2">hoặc</span>
+                      <Link 
+                        href="/login?redirect=/checkout" 
+                        className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600"
+                      >
+                        Đăng nhập
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          
           <nav className="flex items-center space-x-2 text-sm text-gray-500 mt-2">
             <Link href="/cart" className="hover:text-gray-700">Giỏ hàng</Link>
             <span>/</span>
@@ -1427,6 +1510,13 @@ export default function CheckoutPage() {
           </div>
         </div>
       )}
+      {/* Guest Info Modal */}
+      <GuestInfoModal
+        isOpen={showGuestModal}
+        onClose={() => setShowGuestModal(false)}
+        onSubmit={handleGuestInfoSubmit}
+        isProcessing={isProcessing}
+      />
     </Layout>
   )
 }

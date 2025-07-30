@@ -2,9 +2,12 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { OrdersController } from './orders.controller';
 import { PaymentController } from './payment.controller';
+import { GuestOrdersController } from './guest-orders.controller';
 import { OrdersService } from './orders.service';
+import { OrderHelper } from './order-helper.service';
 import { Order, OrderSchema } from '../common/schemas/order.schema';
 import { Product, ProductSchema } from '../common/schemas/product.schema';
+import { GuestCustomerModule } from '../guest-customer/guest-customer.module';
 
 @Module({
   imports: [
@@ -12,9 +15,10 @@ import { Product, ProductSchema } from '../common/schemas/product.schema';
       { name: Order.name, schema: OrderSchema },
       { name: Product.name, schema: ProductSchema }
     ]),
+    GuestCustomerModule
   ],
-  controllers: [OrdersController, PaymentController],
-  providers: [OrdersService],
+  controllers: [OrdersController, PaymentController, GuestOrdersController],
+  providers: [OrdersService, OrderHelper],
   exports: [OrdersService],
 })
 export class OrdersModule {}

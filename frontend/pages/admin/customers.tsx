@@ -34,6 +34,9 @@ interface Customer {
   status: 'active' | 'inactive' | 'blocked';
   createdAt: string;
   updatedAt: string;
+  isGuest?: boolean;
+  successfulOrders?: number;
+  customerLevel?: string;
 }
 
 const AdminCustomers = () => {
@@ -42,6 +45,7 @@ const AdminCustomers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
+  const [customerTypeFilter, setCustomerTypeFilter] = useState('all');
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [showCustomerDetail, setShowCustomerDetail] = useState<string | null>(null);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
@@ -71,7 +75,10 @@ const AdminCustomers = () => {
         lastOrderDate: customer.lastOrderDate || '',
         status: customer.status || 'active',
         createdAt: customer.createdAt || new Date().toISOString(),
-        updatedAt: customer.updatedAt || new Date().toISOString()
+        updatedAt: customer.updatedAt || new Date().toISOString(),
+        isGuest: customer.isGuest || false,
+        successfulOrders: customer.successfulOrders || 0,
+        customerLevel: customer.customerLevel || ''
       })));
     } catch (error) {
       console.error('Error loading customers:', error);
@@ -83,12 +90,15 @@ const AdminCustomers = () => {
 
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         customer.phone.includes(searchTerm);
+                         (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (customer.phone && customer.phone.includes(searchTerm));
     const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
     const matchesCity = cityFilter === 'all' || customer.city === cityFilter;
+    const matchesType = customerTypeFilter === 'all' || 
+                      (customerTypeFilter === 'guest' && customer.isGuest) || 
+                      (customerTypeFilter === 'registered' && !customer.isGuest);
     
-    return matchesSearch && matchesStatus && matchesCity;
+    return matchesSearch && matchesStatus && matchesCity && matchesType;
   });
 
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
@@ -172,6 +182,8 @@ const AdminCustomers = () => {
     activeCustomers: customers.filter(c => c.status === 'active').length,
     inactiveCustomers: customers.filter(c => c.status === 'inactive').length,
     blockedCustomers: customers.filter(c => c.status === 'blocked').length,
+    guestCustomers: customers.filter(c => c.isGuest).length,
+    registeredCustomers: customers.filter(c => !c.isGuest).length,
     totalRevenue: customers.reduce((sum, customer) => sum + customer.totalSpent, 0),
     averageOrderValue: customers.length > 0 ? 
       customers.reduce((sum, customer) => sum + customer.totalSpent, 0) / 
@@ -208,7 +220,7 @@ const AdminCustomers = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
@@ -282,11 +294,35 @@ const AdminCustomers = () => {
               </div>
             </div>
           </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                <UserIcon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Khách vãng lai</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.guestCustomers}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            <div className="flex items-center">
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/20 rounded-lg">
+                <UserIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Đã đăng ký</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.registeredCustomers}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative">
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -307,6 +343,16 @@ const AdminCustomers = () => {
               <option value="active">Hoạt động</option>
               <option value="inactive">Không hoạt động</option>
               <option value="blocked">Bị khóa</option>
+            </select>
+
+            <select
+              value={customerTypeFilter}
+              onChange={(e) => setCustomerTypeFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Tất cả khách hàng</option>
+              <option value="registered">Khách hàng đã đăng ký</option>
+              <option value="guest">Khách vãng lai</option>
             </select>
 
             <select
@@ -394,13 +440,20 @@ const AdminCustomers = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${customer.isGuest ? 'bg-gradient-to-r from-orange-500 to-amber-600' : 'bg-gradient-to-r from-blue-500 to-indigo-600'}`}>
                           <span className="text-white font-semibold text-sm">
                             {customer.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">{customer.name}</div>
+                          <div className="flex items-center">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">{customer.name}</div>
+                            {customer.isGuest && (
+                              <span className="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                                Khách
+                              </span>
+                            )}
+                          </div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">#{customer.id}</div>
                         </div>
                       </div>
@@ -434,6 +487,13 @@ const AdminCustomers = () => {
                         <div className="text-gray-500 dark:text-gray-400 text-xs">
                           {formatDate(customer.lastOrderDate)}
                         </div>
+                        {customer.isGuest && customer.successfulOrders !== undefined && customer.totalOrders > 0 && (
+                          <div className="mt-1">
+                            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                              Tỉ lệ thành công: {Math.round((customer.successfulOrders / customer.totalOrders) * 100)}%
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -563,8 +623,13 @@ const AdminCustomers = () => {
                     <>
                       <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div className="flex items-center justify-between mb-6">
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
                             Chi tiết khách hàng: {customer.name}
+                            {customer.isGuest && (
+                              <span className="ml-3 px-2.5 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                                Khách vãng lai
+                              </span>
+                            )}
                           </h3>
                           <button
                             onClick={() => setShowCustomerDetail(null)}
@@ -633,6 +698,18 @@ const AdminCustomers = () => {
                                 <span className="text-sm text-gray-500 dark:text-gray-400">Đơn hàng cuối:</span>
                                 <span className="font-medium">{formatDate(customer.lastOrderDate)}</span>
                               </div>
+                              {customer.isGuest && customer.successfulOrders !== undefined && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-500 dark:text-gray-400">Đơn thành công:</span>
+                                  <span className="font-medium">{customer.successfulOrders} đơn ({Math.round((customer.successfulOrders / customer.totalOrders) * 100)}%)</span>
+                                </div>
+                              )}
+                              {customer.isGuest && customer.customerLevel && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-500 dark:text-gray-400">Hạng khách hàng:</span>
+                                  <span className="font-medium">{customer.customerLevel}</span>
+                                </div>
+                              )}
                               <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-500 dark:text-gray-400">Trạng thái:</span>
                                 <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(customer.status)}`}>

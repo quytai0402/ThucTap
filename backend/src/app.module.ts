@@ -16,6 +16,7 @@ import { InventoryModule } from './inventory/inventory.module';
 import { UploadModule } from './upload/upload.module';
 import { ClearDataService } from './common/clear-data.service';
 import { AdminController } from './common/admin.controller';
+import { GuestCustomerModule } from './guest-customer/guest-customer.module';
 import { User, UserSchema } from './common/schemas/user.schema';
 import { Category, CategorySchema } from './common/schemas/category.schema';
 import { Product, ProductSchema } from './common/schemas/product.schema';
@@ -24,6 +25,7 @@ import { Review, ReviewSchema } from './common/schemas/review.schema';
 import { Favorite, FavoriteSchema } from './common/schemas/favorite.schema';
 import { Address, AddressSchema } from './common/schemas/address.schema';
 import { StockAdjustment, StockAdjustmentSchema } from './common/schemas/stock-adjustment.schema';
+import { GuestCustomer, GuestCustomerSchema } from './common/schemas/guest-customer.schema';
 
 @Module({
   imports: [
@@ -48,6 +50,7 @@ import { StockAdjustment, StockAdjustmentSchema } from './common/schemas/stock-a
       { name: Favorite.name, schema: FavoriteSchema },
       { name: Address.name, schema: AddressSchema },
       { name: StockAdjustment.name, schema: StockAdjustmentSchema },
+      { name: GuestCustomer.name, schema: GuestCustomerSchema },
     ]),
     
     // Rate limiting
@@ -68,6 +71,7 @@ import { StockAdjustment, StockAdjustmentSchema } from './common/schemas/stock-a
     AnalyticsModule,
     InventoryModule,
     UploadModule,
+    GuestCustomerModule,
   ],
   controllers: [AdminController],
   providers: [ClearDataService],

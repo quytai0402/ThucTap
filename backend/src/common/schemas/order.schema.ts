@@ -32,8 +32,11 @@ export class Order {
   @Prop({ required: true, unique: true })
   orderNumber: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'User', required: false })
   customer: Types.ObjectId;
+  
+  @Prop({ default: false })
+  isGuestOrder: boolean;
 
   @Prop({
     type: [
@@ -81,6 +84,7 @@ export class Order {
   shippingAddress: {
     name: string;
     phone: string;
+    email?: string;
     address: string;
     city: string;
     district: string;

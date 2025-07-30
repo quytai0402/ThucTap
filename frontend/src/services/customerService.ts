@@ -2,32 +2,35 @@ import api from '../utils/api';
 
 export interface Customer {
   id: string;
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   fullName: string;
   email: string;
   phone: string;
   avatar?: string;
   dateOfBirth?: string;
   gender?: 'male' | 'female' | 'other';
-  addresses: CustomerAddress[];
+  addresses?: CustomerAddress[];
   defaultAddressId?: string;
   status: 'active' | 'inactive' | 'blocked';
-  emailVerified: boolean;
-  phoneVerified: boolean;
-  loyaltyPoints: number;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  loyaltyPoints?: number;
   totalOrders: number;
   totalSpent: number;
-  averageOrderValue: number;
+  averageOrderValue?: number;
   lastOrderDate?: string;
-  registrationDate: string;
+  registrationDate?: string;
   lastLoginDate?: string;
   notes?: string;
-  tags: string[];
-  preferredLanguage: 'vi' | 'en';
-  marketingConsent: boolean;
+  tags?: string[];
+  preferredLanguage?: 'vi' | 'en';
+  marketingConsent?: boolean;
   createdAt: string;
   updatedAt: string;
+  isGuest?: boolean;
+  successfulOrders?: number;
+  customerLevel?: string;
 }
 
 export interface CustomerAddress {
@@ -141,7 +144,8 @@ class CustomerService {
         });
       }
       
-      const response = await api.get(`/admin/customers?${params.toString()}`);
+      // Use the combined customers endpoint to get both registered and guest customers
+      const response = await api.get(`/admin/combined-customers?${params.toString()}`);
       return response.data.customers || response.data || [];
     } catch (error) {
       console.error('Error fetching customers:', error);

@@ -11,9 +11,11 @@ import {
   HttpStatus,
   HttpCode,
   Request,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
-import { OrdersService, CreateOrderDto, UpdateOrderDto, OrderFilter } from './orders.service';
+import { OrdersService, CreateOrderDto, CreateGuestOrderDto, UpdateOrderDto, OrderFilter, TrackGuestOrderDto } from './orders.service';
 import { OrderStatus, PaymentStatus } from '../common/schemas/order.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -23,10 +25,44 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new order' })
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create a new order for logged-in user' })
+  @ApiBearerAuth()
   @ApiResponse({ status: 201, description: 'Order created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  create(@Body() createOrderDto: CreateOrderDto) {
+  createForLoggedInUser(@Body() createOrderDto: CreateOrderDto, @Request() req) {
+    // Set customer from authenticated user
+    createOrderDto.customer = req.user.sub;
+    createOrderDto.isGuestOrder = false;
+    return this.ordersService.create(createOrderDto);
+  }
+  
+  @Post('guest')
+  @ApiOperation({ summary: 'Create a new order for guest user' })
+  @ApiResponse({ status: 201, description: 'Order created successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  createGuestOrder(@Body() createGuestOrderDto: CreateGuestOrderDto) {
+    // Convert guest order format to standard order format
+    const createOrderDto: CreateOrderDto = {
+      items: createGuestOrderDto.items.map(item => ({
+        product: item.productId,
+        quantity: item.quantity
+      })),
+      shippingAddress: {
+        name: createGuestOrderDto.guestInfo.fullName,
+        phone: createGuestOrderDto.guestInfo.phone,
+        email: createGuestOrderDto.guestInfo.email,
+        address: createGuestOrderDto.guestInfo.address.address,
+        city: createGuestOrderDto.guestInfo.address.city,
+        district: createGuestOrderDto.guestInfo.address.district,
+        ward: createGuestOrderDto.guestInfo.address.ward
+      },
+      paymentMethod: createGuestOrderDto.paymentMethod,
+      notes: createGuestOrderDto.notes,
+      discountCode: createGuestOrderDto.discountCode,
+      isGuestOrder: true
+    };
+    
     return this.ordersService.create(createOrderDto);
   }
 
@@ -38,19 +74,23 @@ export class OrdersController {
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
     @Query('customer') customer?: string,
+    @Query('phone') phone?: string,
     @Query('status') status?: OrderStatus,
     @Query('paymentStatus') paymentStatus?: PaymentStatus,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
+    @Query('isGuestOrder') isGuestOrder?: string,
     @Query('sortBy') sortBy: string = 'createdAt',
     @Query('sortOrder') sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const filter: OrderFilter = {
       customer,
+      phone,
       status,
       paymentStatus,
       dateFrom: dateFrom ? new Date(dateFrom) : undefined,
       dateTo: dateTo ? new Date(dateTo) : undefined,
+      isGuestOrder: isGuestOrder ? isGuestOrder === 'true' : undefined,
     };
 
     return this.ordersService.findAll(
@@ -88,6 +128,51 @@ export class OrdersController {
   @ApiBearerAuth()
   getMyOrders(@Request() req) {
     return this.ordersService.findByCustomer(req.user.sub);
+  }
+  
+  @Post('guest/track')
+  @ApiOperation({ summary: 'Track guest order by phone and order number' })
+  @ApiResponse({ status: 200, description: 'Order found' })
+  @ApiResponse({ status: 404, description: 'Order not found' })
+  async trackGuestOrder(@Body() trackGuestOrderDto: TrackGuestOrderDto) {
+    try {
+      const orders = await this.ordersService.findGuestOrdersByPhone(
+        trackGuestOrderDto.phone, 
+        trackGuestOrderDto.orderNumber
+      );
+      
+      if (!orders || orders.length === 0) {
+        throw new NotFoundException('No order found with the provided phone number and order number');
+      }
+      
+      return orders;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Error tracking order: ' + error.message);
+    }
+  }
+  
+  @Get('guest/by-phone/:phone')
+  @ApiOperation({ summary: 'Get all guest orders by phone number' })
+  @ApiResponse({ status: 200, description: 'Orders found' })
+  @ApiResponse({ status: 404, description: 'No orders found' })
+  async getGuestOrdersByPhone(@Param('phone') phone: string) {
+    try {
+      const orders = await this.ordersService.findGuestOrdersByPhone(phone);
+      
+      if (!orders || orders.length === 0) {
+        throw new NotFoundException('No orders found with the provided phone number');
+      }
+      
+      return orders;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Error retrieving orders: ' + error.message);
+    }
   }
 
   @Get('recent')

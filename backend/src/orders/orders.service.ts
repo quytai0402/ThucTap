@@ -3,9 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Order, OrderDocument, OrderStatus, PaymentStatus, PaymentMethod } from '../common/schemas/order.schema';
 import { Product, ProductDocument } from '../common/schemas/product.schema';
+import { GuestCustomerService } from '../guest-customer/guest-customer.service';
 
 export interface CreateOrderDto {
-  customer: string;
+  customer?: string; // Optional for guest orders
   items: Array<{
     product: string;
     quantity: number;
@@ -13,6 +14,7 @@ export interface CreateOrderDto {
   shippingAddress: {
     name: string;
     phone: string;
+    email?: string; // Added for guest orders
     address: string;
     city: string;
     district: string;
@@ -21,6 +23,35 @@ export interface CreateOrderDto {
   paymentMethod: PaymentMethod;
   notes?: string;
   discountCode?: string;
+  isGuestOrder?: boolean; // Flag to mark guest orders
+}
+
+export interface GuestInfo {
+  fullName: string;
+  phone: string;
+  email?: string;
+  address: {
+    address: string;
+    city: string;
+    district: string;
+    ward: string;
+  };
+}
+
+export interface CreateGuestOrderDto {
+  items: Array<{
+    productId: string;
+    quantity: number;
+  }>;
+  guestInfo: GuestInfo;
+  paymentMethod: PaymentMethod;
+  notes?: string;
+  discountCode?: string;
+}
+
+export interface TrackGuestOrderDto {
+  phone: string;
+  orderNumber: string;
 }
 
 export interface UpdateOrderDto {
@@ -32,11 +63,13 @@ export interface UpdateOrderDto {
 
 export interface OrderFilter {
   customer?: string;
+  phone?: string; // Added phone filter for admin to search by customer phone
   status?: OrderStatus;
   paymentStatus?: PaymentStatus;
   paymentMethod?: PaymentMethod;
   dateFrom?: Date;
   dateTo?: Date;
+  isGuestOrder?: boolean; // Added to filter guest orders
 }
 
 @Injectable()
@@ -44,6 +77,7 @@ export class OrdersService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private readonly guestCustomerService: GuestCustomerService
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
@@ -56,9 +90,8 @@ export class OrdersService {
     // Check stock availability
     await this.validateStock(createOrderDto.items);
     
-    const orderData = {
+    const orderData: any = {
       orderNumber,
-      customer: createOrderDto.customer,
       items,
       subtotal,
       shippingFee,
@@ -68,13 +101,45 @@ export class OrdersService {
       notes: createOrderDto.notes,
       status: OrderStatus.PENDING,
       paymentStatus: PaymentStatus.PENDING,
+      isGuestOrder: createOrderDto.isGuestOrder || false,
     };
+    
+    // Add customer ID if not a guest order
+    if (!createOrderDto.isGuestOrder && createOrderDto.customer) {
+      orderData.customer = createOrderDto.customer;
+    }
 
     const order = new this.orderModel(orderData);
     const savedOrder = await order.save();
     
     // Update product stock
     await this.updateProductStock(createOrderDto.items);
+    
+    // If this is a guest order, update or create guest customer record based on phone
+    if (createOrderDto.isGuestOrder && createOrderDto.shippingAddress.phone) {
+      try {
+        // Extract guest customer info from shipping address
+        const guestInfo = {
+          phone: createOrderDto.shippingAddress.phone,
+          fullName: createOrderDto.shippingAddress.name,
+          email: createOrderDto.shippingAddress.email,
+          address: {
+            address: createOrderDto.shippingAddress.address,
+            city: createOrderDto.shippingAddress.city,
+            district: createOrderDto.shippingAddress.district,
+            ward: createOrderDto.shippingAddress.ward,
+          }
+        };
+        
+        // Create or update guest customer record
+        await this.guestCustomerService.createOrUpdate(guestInfo, savedOrder);
+        
+        console.log(`Guest customer info processed for phone: ${guestInfo.phone}`);
+      } catch (error) {
+        console.error('Error processing guest customer:', error);
+        // Don't fail the order creation if guest customer processing fails
+      }
+    }
     
     return this.findOne(savedOrder._id.toString());
   }
@@ -98,6 +163,16 @@ export class OrdersService {
     if (filter.status) query.status = filter.status;
     if (filter.paymentStatus) query.paymentStatus = filter.paymentStatus;
     if (filter.paymentMethod) query.paymentMethod = filter.paymentMethod;
+    
+    // Phone number filter (for both registered and guest customers)
+    if (filter.phone) {
+      query['shippingAddress.phone'] = filter.phone;
+    }
+    
+    // Filter by guest order status
+    if (filter.isGuestOrder !== undefined) {
+      query.isGuestOrder = filter.isGuestOrder;
+    }
     
     if (filter.dateFrom || filter.dateTo) {
       query.createdAt = {};
@@ -188,20 +263,37 @@ export class OrdersService {
   async updateStatus(id: string, status: OrderStatus): Promise<Order> {
     const updateData: any = { status };
     
+    // Get order before update
+    const currentOrder = await this.findOne(id);
+    if (!currentOrder) {
+      throw new NotFoundException('Order not found');
+    }
+    
     if (status === OrderStatus.DELIVERED) {
       updateData.deliveredAt = new Date();
+      
+      // If this is a guest order and delivered successfully, update guest customer stats
+      if (currentOrder.isGuestOrder && currentOrder.shippingAddress?.phone) {
+        try {
+          await this.guestCustomerService.updateOrderSuccess(
+            id, 
+            currentOrder.shippingAddress.phone,
+            currentOrder.total
+          );
+          console.log(`Updated guest customer stats for phone: ${currentOrder.shippingAddress.phone}`);
+        } catch (error) {
+          console.error('Error updating guest customer success stats:', error);
+          // Don't fail the order status update if guest customer processing fails
+        }
+      }
+      
     } else if (status === OrderStatus.CANCELLED) {
       updateData.cancelledAt = new Date();
       // Restore product stock
-      const order = await this.findOne(id);
-      await this.restoreProductStock(order.items);
+      await this.restoreProductStock(currentOrder.items);
     }
 
     const order = await this.orderModel.findByIdAndUpdate(id, updateData, { new: true });
-    
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
     
     return this.findOne(id);
   }
@@ -405,6 +497,26 @@ export class OrdersService {
       .sort({ createdAt: -1 })
       .limit(limit)
       .exec();
+  }
+
+  async findGuestOrdersByPhone(phone: string, orderNumber?: string): Promise<Order[]> {
+    const query: any = {
+      isGuestOrder: true,
+      'shippingAddress.phone': phone
+    };
+    
+    // Add order number to query if provided
+    if (orderNumber) {
+      query.orderNumber = orderNumber;
+    }
+    
+    const orders = await this.orderModel
+      .find(query)
+      .populate('items.product')
+      .sort({ createdAt: -1 })
+      .exec();
+      
+    return orders;
   }
 
   async getOrderTracking(orderId: string, customerId: string): Promise<any> {
