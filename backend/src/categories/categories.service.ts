@@ -54,15 +54,23 @@ export class CategoriesService {
     // Add product count for each category
     const categoriesWithCounts = await Promise.all(
       categories.map(async (category) => {
-        // Use ObjectId for comparison with product.category field
-        const productCount = await this.productModel.countDocuments({ 
-          category: category._id 
-        });
-        
-        return {
-          ...category.toObject(),
-          productCount,
-        };
+        try {
+          // Use ObjectId for comparison with product.category field
+          const productCount = await this.productModel.countDocuments({ 
+            category: category._id 
+          });
+          
+          return {
+            ...category.toObject(),
+            productCount,
+          };
+        } catch (error) {
+          console.error(`Error counting products for category ${category.name}:`, error);
+          return {
+            ...category.toObject(),
+            productCount: 0,
+          };
+        }
       }),
     );
 

@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { OrdersController } from './orders.controller';
 import { PaymentController } from './payment.controller';
 import { GuestOrdersController } from './guest-orders.controller';
+import { AdminOrdersController } from './admin/admin-orders.controller';
 import { OrdersService } from './orders.service';
 import { OrderHelper } from './order-helper.service';
 import { Order, OrderSchema } from '../common/schemas/order.schema';
@@ -17,7 +18,7 @@ import { GuestCustomerModule } from '../guest-customer/guest-customer.module';
     ]),
     GuestCustomerModule
   ],
-  controllers: [OrdersController, PaymentController, GuestOrdersController],
+  controllers: [OrdersController, PaymentController, GuestOrdersController, AdminOrdersController],
   providers: [OrdersService, OrderHelper],
   exports: [OrdersService],
 })

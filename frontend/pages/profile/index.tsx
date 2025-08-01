@@ -437,7 +437,7 @@ const ProfilePage: React.FC = () => {
                                     {getStatusText(order.status)}
                                   </span>
                                   <p className="text-lg font-semibold text-gray-900 mt-1">
-                                    {order.totalAmount.toLocaleString('vi-VN')}đ
+                                    {order.total.toLocaleString('vi-VN')}đ
                                   </p>
                                 </div>
                               </div>

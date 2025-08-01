@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import AdminLayout from '../../src/components/AdminLayout'
 import { withAuth } from '../../src/components/withAuth'
-import orderService from '../../src/services/orderService'
+import { ordersService } from '../../src/services/ordersService'
 import { 
   TruckIcon,
   MagnifyingGlassIcon,
@@ -58,7 +58,7 @@ const AdminShipping: React.FC = () => {
 
   const fetchShippingOrders = async () => {
     try {
-      const response = await orderService.getOrders({ status: 'all' });
+      const response = await ordersService.getAdminOrders({ status: 'all' });
       const orders = Array.isArray(response) ? response : ((response as any).data || []);
       
       // Transform orders to shipping format

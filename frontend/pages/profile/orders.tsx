@@ -29,7 +29,7 @@ interface Order {
   orderNumber: string
   status: string
   paymentStatus: string
-  totalAmount: number
+  total: number
   createdAt: string
   updatedAt: string
   shippingAddress: {
@@ -393,7 +393,7 @@ export default function ProfileOrdersPage() {
                                 </div>
                                 <div className="flex items-center text-lg font-semibold text-gray-900">
                                   <CurrencyDollarIcon className="h-5 w-5 mr-1" />
-                                  {(order.totalAmount || 0).toLocaleString('vi-VN')}đ
+                                  {(order.total || 0).toLocaleString('vi-VN')}đ
                                 </div>
                               </div>
                             </div>
@@ -564,7 +564,7 @@ export default function ProfileOrdersPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-medium text-gray-900">Tổng tiền:</span>
                     <span className="text-2xl font-bold text-blue-600">
-                      {(selectedOrder.totalAmount || 0).toLocaleString('vi-VN')}đ
+                      {(selectedOrder.total || 0).toLocaleString('vi-VN')}đ
                     </span>
                   </div>
                 </div>

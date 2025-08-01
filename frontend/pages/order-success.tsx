@@ -19,7 +19,7 @@ interface OrderDetails {
   _id: string
   orderNumber: string
   status: string
-  totalAmount: number
+  total: number
   shippingFee: number
   paymentMethod: string
   shippingAddress: {
@@ -257,7 +257,7 @@ export default function OrderSuccessPage() {
                 <div className="flex justify-between">
                   <dt className="text-sm text-gray-600">Tạm tính</dt>
                   <dd className="text-sm font-medium text-gray-900">
-                    {((order.totalAmount || 0) - (order.shippingFee || 0)).toLocaleString('vi-VN')}₫
+                    {((order.total || 0) - (order.shippingFee || 0)).toLocaleString('vi-VN')}₫
                   </dd>
                 </div>
                 <div className="flex justify-between mt-2">
@@ -273,7 +273,7 @@ export default function OrderSuccessPage() {
                 <div className="flex justify-between mt-2 pt-2 border-t border-gray-200">
                   <dt className="text-base font-medium text-gray-900">Tổng cộng</dt>
                   <dd className="text-base font-medium text-red-600">
-                    {(order.totalAmount || 0).toLocaleString('vi-VN')}₫
+                    {(order.total || 0).toLocaleString('vi-VN')}₫
                   </dd>
                 </div>
               </div>

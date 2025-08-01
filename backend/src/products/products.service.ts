@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { Product, ProductDocument, ProductStatus } from '../common/schemas/product.schema';
 import { Category, CategoryDocument } from '../common/schemas/category.schema';
@@ -131,9 +131,12 @@ export class ProductsService {
         const category = await this.categoryModel.findOne({ name: filter.category });
         if (category) {
           query.category = category._id;
-        } else {
-          // If category not found, use the string directly (might be ObjectId string)
+        } else if (Types.ObjectId.isValid(filter.category)) {
+          // If it's a valid ObjectId string, use it directly
           query.category = filter.category;
+        } else {
+          // If category not found and not a valid ObjectId, skip filtering
+          console.warn(`Invalid category filter: ${filter.category}`);
         }
       } else {
         query.category = filter.category;

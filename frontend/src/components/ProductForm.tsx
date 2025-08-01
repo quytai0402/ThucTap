@@ -3,7 +3,8 @@ import {
   XMarkIcon,
   PhotoIcon,
   PlusIcon,
-  TrashIcon
+  TrashIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import { Product } from '../types';
 import { CreateProductData } from '../services/productService';
@@ -42,6 +43,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
   product,
   isLoading = false
 }) => {
+  // Optimized version with enhanced styling
   const [formData, setFormData] = useState<ExtendedProductData>({
     name: '',
     description: '',
@@ -442,19 +444,19 @@ const ProductForm: React.FC<ProductFormProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose}></div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onClick={onClose}></div>
         
-        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full border border-gray-200 dark:border-gray-700">
           <form onSubmit={handleSubmit}>
-            <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            <div className="bg-white dark:bg-gray-800 px-6 pt-6 pb-4 sm:p-6 sm:pb-4">
+              <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
                   {product ? 'Chỉnh sửa sản phẩm' : 'Thêm sản phẩm mới'}
                 </h3>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                 >
                   <XMarkIcon className="h-6 w-6" />
                 </button>
@@ -474,7 +476,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full px-4 py-2.5 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
                         errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                       }`}
                       placeholder="Nhập tên sản phẩm"
@@ -491,7 +493,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       value={formData.description}
                       onChange={handleInputChange}
                       rows={4}
-                      className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full px-4 py-2.5 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
                         errors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                       }`}
                       placeholder="Nhập mô tả sản phẩm"
@@ -509,7 +511,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                       onChange={handleInputChange}
                       rows={2}
                       maxLength={150}
-                      className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
+                      className={`w-full px-4 py-2.5 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
                         errors.shortDescription ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                       }`}
                       placeholder="Nhập mô tả ngắn (tối đa 150 ký tự)"
@@ -530,7 +532,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                         name="price"
                         value={formData.price}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full px-4 py-2.5 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
                           errors.price ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                         }`}
                         placeholder="0"
@@ -547,7 +549,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                         name="originalPrice"
                         value={formData.originalPrice}
                         onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                         placeholder="0"
                       />
                     </div>
@@ -563,7 +565,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                         value={formData.category}
                         onChange={handleInputChange}
                         disabled={loadingCategories}
-                        className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full px-4 py-2.5 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
                           errors.category ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                         }`}
                       >
@@ -588,7 +590,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                         value={formData.brand}
                         onChange={handleInputChange}
                         disabled={loadingBrands}
-                        className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full px-4 py-2.5 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
                           errors.brand ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                         }`}
                       >
@@ -615,7 +617,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
                         name="stockQuantity"
                         value={formData.stockQuantity}
                         onChange={handleInputChange}
-                        className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 ${
+                        className={`w-full px-4 py-2.5 border rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
                           errors.stockQuantity ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
                         }`}
                         placeholder="0"
@@ -886,19 +888,42 @@ const ProductForm: React.FC<ProductFormProps> = ({
               </div>
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+            <div className="bg-gray-50 dark:bg-gray-900/50 px-6 py-5 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-200 dark:border-gray-700">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full inline-flex justify-center items-center rounded-xl border border-transparent shadow-sm px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-base font-medium text-white hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:ml-4 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               >
-                {isLoading ? 'Đang xử lý...' : (product ? 'Cập nhật' : 'Thêm mới')}
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Đang xử lý...
+                  </>
+                ) : (
+                  <>
+                    {product ? (
+                      <>
+                        <PencilIcon className="h-4 w-4 mr-2" />
+                        Cập nhật
+                      </>
+                    ) : (
+                      <>
+                        <PlusIcon className="h-4 w-4 mr-2" />
+                        Thêm mới
+                      </>
+                    )}
+                  </>
+                )}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                className="mt-3 w-full inline-flex justify-center items-center rounded-xl border border-gray-300 dark:border-gray-600 shadow-sm px-6 py-3 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm transition-all duration-200"
               >
+                <XMarkIcon className="h-4 w-4 mr-2" />
                 Hủy
               </button>
             </div>

@@ -521,7 +521,7 @@ export default function CheckoutPage() {
           fullAddress: `${shippingAddress.address}, ${shippingAddress.wardName}, ${shippingAddress.districtName}, ${shippingAddress.provinceName}`
         },
         paymentMethod: selectedPayment,
-        totalAmount: finalTotal,
+        total: finalTotal,
         shippingFee,
         note: shippingAddress.note,
         isGuestOrder: isGuestMode

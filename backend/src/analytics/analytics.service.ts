@@ -49,7 +49,9 @@ export class AnalyticsService {
   }
 
   async getSalesAnalytics(period: string, startDate?: string, endDate?: string) {
-    const matchStage: any = {};
+    const matchStage: any = { 
+      status: 'delivered' // Chỉ tính doanh thu từ đơn hàng đã giao
+    };
     
     if (startDate && endDate) {
       matchStage.createdAt = {
@@ -70,7 +72,7 @@ export class AnalyticsService {
       {
         $group: {
           _id: { $dateToString: { format: groupFormat, date: '$createdAt' } },
-          totalSales: { $sum: '$totalAmount' },
+          totalSales: { $sum: '$total' },
           orderCount: { $sum: 1 },
         },
       },
@@ -82,6 +84,7 @@ export class AnalyticsService {
 
   async getProductAnalytics(limit: number) {
     const topSellingProducts = await this.orderModel.aggregate([
+      { $match: { status: 'delivered' } }, // Chỉ tính từ đơn hàng đã giao
       { $unwind: '$items' },
       {
         $group: {
@@ -197,12 +200,22 @@ export class AnalyticsService {
     return categoryPerformance;
   }
 
-  private async getTotalRevenue(): Promise<number> {
+  async getTotalRevenue(): Promise<number> {
     const result = await this.orderModel.aggregate([
-      { $match: { status: 'delivered' } },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } },
+      {
+        $match: {
+          status: 'delivered'
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$total' }
+        }
+      }
     ]);
-    return result[0]?.total || 0;
+
+    return result.length > 0 ? result[0].totalRevenue : 0;
   }
 
   private async getRecentOrders(limit: number) {
@@ -216,6 +229,7 @@ export class AnalyticsService {
 
   private async getTopProducts(limit: number) {
     return this.orderModel.aggregate([
+      { $match: { status: 'delivered' } }, // Chỉ tính từ đơn hàng đã giao
       { $unwind: '$items' },
       {
         $group: {

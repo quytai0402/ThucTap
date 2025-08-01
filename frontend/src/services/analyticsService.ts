@@ -14,7 +14,7 @@ export interface DashboardStats {
 export interface RecentOrder {
   _id: string;
   orderNumber: string;
-  totalAmount: number;
+  total: number;
   status: string;
   createdAt: string;
   customer: {

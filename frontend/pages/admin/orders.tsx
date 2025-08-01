@@ -28,23 +28,22 @@ interface OrderItem {
   image: string;
 }
 
-interface Order {
-  id: string;
+interface OrderDisplay {
+  _id: string;
+  orderNumber: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
-  items: OrderItem[];
-  totalAmount: number;
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  paymentStatus: 'pending' | 'paid' | 'failed';
+  total: number;
+  status: string;
   paymentMethod: string;
-  shippingAddress: {
-    address: string;
-    city: string;
-    district: string;
-  };
+  paymentStatus: string;
   createdAt: string;
-  updatedAt: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
 }
 
 const AdminOrders = () => {
@@ -58,15 +57,20 @@ const AdminOrders = () => {
   const loadOrders = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Loading admin orders...');
       const response = await ordersService.getAdminOrders({ page: 1, limit: 100 });
-      const ordersData = response?.orders || [];
+      console.log('📊 Admin orders response:', response);
+      
+      const ordersData = response?.data || response?.orders || [];
+      console.log('📋 Orders data:', ordersData);
+      
       setOrders(ordersData.map((order: any) => ({
         id: order._id || order.id,
         customerName: order.customer?.fullName || order.customer?.name || 'N/A',
         customerEmail: order.customer?.email || '',
         customerPhone: order.customer?.phone || '',
         items: order.items || [],
-        totalAmount: order.total || order.totalAmount || 0,
+        total: order.total || 0,
         status: order.status || 'pending',
         paymentStatus: order.paymentStatus || 'pending',
         paymentMethod: order.paymentMethod || '',
@@ -79,7 +83,7 @@ const AdminOrders = () => {
         updatedAt: order.updatedAt || new Date().toISOString()
       })));
     } catch (error) {
-      console.error('Error loading orders:', error);
+      console.error('❌ Error loading orders:', error);
       setOrders([]);
     } finally {
       setLoading(false);
@@ -220,7 +224,7 @@ const AdminOrders = () => {
     pendingOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'pending').length : 0,
     processingOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'processing').length : 0,
     completedOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'delivered').length : 0,
-    totalRevenue: orders && Array.isArray(orders) ? orders.reduce((sum, order) => sum + order.totalAmount, 0) : 0
+    totalRevenue: orders && Array.isArray(orders) ? orders.reduce((sum, order) => sum + order.total, 0) : 0
   };
 
   return (
@@ -438,7 +442,7 @@ const AdminOrders = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {formatCurrency(order.totalAmount)}
+                        {formatCurrency(order.total)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -652,7 +656,7 @@ const AdminOrders = () => {
                                     Tổng cộng:
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900 dark:text-white">
-                                    {formatCurrency(order.totalAmount)}
+                                    {formatCurrency(order.total)}
                                   </td>
                                 </tr>
                               </tbody>
