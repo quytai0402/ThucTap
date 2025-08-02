@@ -26,6 +26,8 @@ import { Favorite, FavoriteSchema } from './common/schemas/favorite.schema';
 import { Address, AddressSchema } from './common/schemas/address.schema';
 import { StockAdjustment, StockAdjustmentSchema } from './common/schemas/stock-adjustment.schema';
 import { GuestCustomer, GuestCustomerSchema } from './common/schemas/guest-customer.schema';
+import { Brand, BrandSchema } from './common/schemas/brand.schema';
+import { BrandsModule } from './brands/brands.module';
 
 @Module({
   imports: [
@@ -51,6 +53,7 @@ import { GuestCustomer, GuestCustomerSchema } from './common/schemas/guest-custo
       { name: Address.name, schema: AddressSchema },
       { name: StockAdjustment.name, schema: StockAdjustmentSchema },
       { name: GuestCustomer.name, schema: GuestCustomerSchema },
+      { name: Brand.name, schema: BrandSchema },
     ]),
     
     // Rate limiting
@@ -72,6 +75,7 @@ import { GuestCustomer, GuestCustomerSchema } from './common/schemas/guest-custo
     InventoryModule,
     UploadModule,
     GuestCustomerModule,
+    BrandsModule,
   ],
   controllers: [AdminController],
   providers: [ClearDataService],

@@ -151,7 +151,7 @@ const ProductForm: React.FC<ProductFormProps> = ({
         isHot: product.isHot || false,
         isSale: product.isSale || false,
         status: product.status,
-        specs: product.specs || {
+        specs: product.specifications || product.specs || {
           processor: '',
           ram: '',
           storage: '',

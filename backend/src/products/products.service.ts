@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import * as mongoose from 'mongoose';
 import { Product, ProductDocument, ProductStatus } from '../common/schemas/product.schema';
 import { Category, CategoryDocument } from '../common/schemas/category.schema';
+import { BrandsService } from '../brands/brands.service';
 
 export interface CreateProductDto {
   name: string;
@@ -59,6 +60,7 @@ export class ProductsService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
+    private brandsService: BrandsService,
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -292,6 +294,8 @@ export class ProductsService {
   }
 
   async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
+    console.log('🔄 Updating product with data:', updateProductDto);
+    
     let updateData: any = { ...updateProductDto };
 
     // Regenerate slug if name is updated
@@ -303,6 +307,27 @@ export class ProductsService {
         .replace(/^-|-$/g, '');
     }
 
+    // Handle category lookup similar to create method
+    if (updateProductDto.category) {
+      let category;
+      if (Types.ObjectId.isValid(updateProductDto.category)) {
+        category = await this.categoryModel.findById(updateProductDto.category);
+      } else {
+        category = await this.categoryModel.findOne({ 
+          name: { $regex: new RegExp(`^${updateProductDto.category}$`, 'i') } 
+        });
+      }
+      
+      if (!category) {
+        throw new NotFoundException(`Category "${updateProductDto.category}" not found`);
+      }
+      
+      console.log(`📂 Found category: ${category.name} with ID: ${category._id}`);
+      updateData.category = category._id;
+    }
+
+    console.log('💾 Update data before save:', updateData);
+
     const product = await this.productModel
       .findByIdAndUpdate(id, updateData, { new: true })
       .populate('category', 'name slug');
@@ -311,6 +336,7 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
+    console.log('✅ Product updated successfully:', product.name);
     return product;
   }
 
@@ -368,7 +394,7 @@ export class ProductsService {
   }
 
   async getBrands(): Promise<string[]> {
-    return this.productModel.distinct('brand');
+    return this.brandsService.findAllNames();
   }
 
   async getCategories(): Promise<any[]> {

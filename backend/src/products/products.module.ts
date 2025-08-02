@@ -5,6 +5,7 @@ import { AdminProductsController } from './admin/admin-products.controller';
 import { ProductsService } from './products.service';
 import { Product, ProductSchema } from '../common/schemas/product.schema';
 import { CategoriesModule } from '../categories/categories.module';
+import { BrandsModule } from '../brands/brands.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { CategoriesModule } from '../categories/categories.module';
       { name: Product.name, schema: ProductSchema }
     ]),
     CategoriesModule,
+    BrandsModule,
   ],
   controllers: [ProductsController, AdminProductsController],
   providers: [ProductsService],
