@@ -28,6 +28,25 @@ interface OrderItem {
   image: string;
 }
 
+interface Order {
+  id: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  items: OrderItem[];
+  total: number;
+  status: string;
+  paymentStatus: string;
+  paymentMethod: string;
+  shippingAddress: {
+    address: string;
+    city: string;
+    district: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface OrderDisplay {
   _id: string;
   orderNumber: string;
