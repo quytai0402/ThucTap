@@ -92,7 +92,7 @@ const CategoriesSection: React.FC = () => {
               id: category.slug,
               name: category.name,
               description: category.description,
-              image: config.image,
+              image: category.image || config.image, // Ưu tiên hình ảnh từ database
               href: `/products?category=${category.slug}`,
               productCount,
               icon: config.icon,
@@ -111,7 +111,7 @@ const CategoriesSection: React.FC = () => {
               id: category.slug,
               name: category.name,
               description: category.description,
-              image: config.image,
+              image: category.image || config.image, // Ưu tiên hình ảnh từ database
               href: `/products?category=${category.slug}`,
               productCount: 0,
               icon: config.icon,
