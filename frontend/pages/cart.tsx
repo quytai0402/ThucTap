@@ -63,11 +63,8 @@ export default function CartPage() {
   }
 
   const handleCheckout = () => {
-    if (!user) {
-      router.push('/login?redirect=/checkout')
-    } else {
-      router.push('/checkout')
-    }
+    // Cho phép khách vãng lai đặt hàng - không bắt buộc đăng nhập
+    router.push('/checkout')
   }
 
   if (items.length === 0) {
@@ -287,8 +284,17 @@ export default function CartPage() {
                   onClick={handleCheckout}
                   className="w-full bg-blue-600 border border-transparent rounded-md shadow-sm py-3 px-4 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 focus:ring-blue-500"
                 >
-                  {user ? 'Tiến hành thanh toán' : 'Đăng nhập để thanh toán'}
+                  Tiến hành thanh toán
                 </button>
+                {!user && (
+                  <p className="mt-2 text-sm text-gray-500 text-center">
+                    Bạn có thể đặt hàng mà không cần đăng nhập, hoặc{' '}
+                    <Link href="/login" className="text-blue-600 hover:text-blue-500">
+                      đăng nhập
+                    </Link>{' '}
+                    để theo dõi đơn hàng dễ dàng hơn
+                  </p>
+                )}
               </div>
 
               {/* Security badges */}

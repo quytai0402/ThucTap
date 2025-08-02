@@ -191,7 +191,7 @@ export default function CheckoutPage() {
     }
     
     if (!user) {
-      // Don't redirect - we'll handle this with the guest checkout
+      // Automatically set guest mode if no user is logged in
       setIsGuestMode(true)
     }
   }, [user, items.length, router])
@@ -467,34 +467,47 @@ export default function CheckoutPage() {
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // If guest mode and no guest info, show the modal to collect guest info
-    if (isGuestMode && !guestInfo) {
-      setShowGuestModal(true)
-      return
-    }
-    
+    // Validate form for both guest and authenticated users
     if (!validateForm()) return
 
-    // For credit card, process payment first
-    if (selectedPayment === 'credit_card') {
-      if (!creditCardData.isValid) {
-        alert('Vui lòng nhập đầy đủ thông tin thẻ tín dụng hợp lệ')
-        return
-      }
-      await processCreditCardPayment()
-      return
-    }
-
-    // For bank transfer, check if payment is confirmed
-    if (selectedPayment === 'bank_transfer' && paymentStatus !== 'confirmed') {
-      alert('Vui lòng hoàn tất thanh toán trước khi đặt hàng')
-      return
-    }
-    
     setIsProcessing(true)
     try {
-      // Process order directly for COD and confirmed bank transfer
-      await processOrder(tempOrderId)
+      // Ensure we have a tempOrderId
+      let currentOrderId = tempOrderId;
+      if (!currentOrderId) {
+        const timestamp = Date.now()
+        const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase()
+        currentOrderId = `ORD${timestamp}${randomSuffix}`
+        setTempOrderId(currentOrderId)
+        sessionStorage.setItem('checkoutOrderId', currentOrderId)
+      }
+
+      // Logic flow mới:
+      // 1. COD: Tạo order trực tiếp với status PENDING
+      // 2. Bank Transfer: Tạo order với status PENDING, hiển thị thông tin chuyển khoản
+      // 3. Credit Card: Xử lý payment trước, nếu thành công thì tạo order với status PAID
+      
+      if (selectedPayment === 'credit_card') {
+        // Xử lý thanh toán thẻ tín dụng trước
+        if (!creditCardData.isValid) {
+          alert('Vui lòng nhập đầy đủ thông tin thẻ tín dụng hợp lệ')
+          setIsProcessing(false)
+          return
+        }
+        
+        // Process credit card payment first
+        await processCreditCardPayment()
+        return // processCreditCardPayment đã handle tạo order
+      } else {
+        // Cho COD và Bank Transfer: tạo order với payment status = PENDING
+        await processOrder(currentOrderId)
+        
+        // Nếu là bank transfer, hiển thị thông tin chuyển khoản
+        if (selectedPayment === 'bank_transfer') {
+          setShowQRCode(true)
+          startRealTimeChecker(currentOrderId)
+        }
+      }
     } catch (error) {
       console.error('Error placing order:', error)
       alert('Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.')
@@ -847,27 +860,16 @@ export default function CheckoutPage() {
                 </div>
                 <div className="ml-3 flex-1 md:flex md:justify-between">
                   <p className="text-sm text-blue-700">
-                    {guestInfo ? 
-                      `Bạn đang đặt hàng với thông tin: ${guestInfo.fullName} (${guestInfo.phone})` : 
-                      'Bạn chưa đăng nhập. Vui lòng nhập thông tin vận chuyển khi hoàn tất đặt hàng.'}
+                    🛒 <strong>Đặt hàng không cần đăng nhập:</strong> Bạn có thể đặt hàng ngay lập tức mà không cần tạo tài khoản. Chỉ cần điền thông tin giao hàng bên dưới.
                   </p>
-                  {!guestInfo && (
-                    <p className="mt-3 text-sm md:mt-0 md:ml-6">
-                      <button 
-                        onClick={() => setShowGuestModal(true)}
-                        className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600"
-                      >
-                        Nhập ngay
-                      </button>
-                      <span className="mx-2">hoặc</span>
-                      <Link 
-                        href="/login?redirect=/checkout" 
-                        className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600"
-                      >
-                        Đăng nhập
-                      </Link>
-                    </p>
-                  )}
+                  <p className="mt-3 text-sm md:mt-0 md:ml-6">
+                    <Link 
+                      href="/login?redirect=/checkout" 
+                      className="whitespace-nowrap font-medium text-blue-700 hover:text-blue-600"
+                    >
+                      Hoặc đăng nhập để theo dõi đơn hàng
+                    </Link>
+                  </p>
                 </div>
               </div>
             </div>

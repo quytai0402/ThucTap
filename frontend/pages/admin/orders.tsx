@@ -212,6 +212,25 @@ const AdminOrders = () => {
     }
   };
 
+  const handlePaymentStatusChange = async (orderId: string, newPaymentStatus: string) => {
+    try {
+      // Gọi API để cập nhật payment status
+      await ordersService.updatePaymentStatus(orderId, newPaymentStatus as any);
+      
+      // Cập nhật state local sau khi API thành công
+      setOrders(orders.map(order => 
+        order.id === orderId 
+          ? { ...order, paymentStatus: newPaymentStatus as any, updatedAt: new Date().toISOString() }
+          : order
+      ));
+      
+      console.log(`✅ Order ${orderId} payment status updated to ${newPaymentStatus}`);
+    } catch (error) {
+      console.error('❌ Error updating payment status:', error);
+      alert('Không thể cập nhật trạng thái thanh toán. Vui lòng thử lại.');
+    }
+  };
+
   const handleSelectOrder = (orderId: string) => {
     setSelectedOrders(prev => 
       prev.includes(orderId)
@@ -703,9 +722,16 @@ const AdminOrders = () => {
                               </div>
                               <div className="flex items-center space-x-2">
                                 <span className="font-medium">Thanh toán:</span>
-                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusColor(order.paymentStatus)}`}>
-                                  {getPaymentStatusText(order.paymentStatus)}
-                                </span>
+                                <select
+                                  value={order.paymentStatus}
+                                  onChange={(e) => handlePaymentStatusChange(order.id, e.target.value)}
+                                  className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border-0 cursor-pointer ${getPaymentStatusColor(order.paymentStatus)}`}
+                                >
+                                  <option value="pending">Chờ thanh toán</option>
+                                  <option value="paid">Đã thanh toán</option>
+                                  <option value="failed">Thất bại</option>
+                                  <option value="refunded">Đã hoàn tiền</option>
+                                </select>
                               </div>
                             </div>
                           </div>
