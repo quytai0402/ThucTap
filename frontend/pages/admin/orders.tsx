@@ -174,12 +174,23 @@ const AdminOrders = () => {
     }
   };
 
-  const handleStatusChange = (orderId: string, newStatus: string) => {
-    setOrders(orders.map(order => 
-      order.id === orderId 
-        ? { ...order, status: newStatus as any, updatedAt: new Date().toISOString() }
-        : order
-    ));
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    try {
+      // Gọi API để cập nhật trong database
+      await ordersService.updateOrderStatus(orderId, newStatus as any);
+      
+      // Cập nhật state local sau khi API thành công
+      setOrders(orders.map(order => 
+        order.id === orderId 
+          ? { ...order, status: newStatus as any, updatedAt: new Date().toISOString() }
+          : order
+      ));
+      
+      console.log(`✅ Order ${orderId} status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('❌ Error updating order status:', error);
+      alert('Không thể cập nhật trạng thái đơn hàng. Vui lòng thử lại.');
+    }
   };
 
   const handleSelectOrder = (orderId: string) => {
@@ -198,14 +209,74 @@ const AdminOrders = () => {
     }
   };
 
-  const handleBulkAction = (action: string) => {
-    console.log(`Bulk action: ${action} for orders:`, selectedOrders);
-    // Implement bulk actions here
+  const handleBulkAction = async (action: string) => {
+    if (selectedOrders.length === 0) {
+      alert('Vui lòng chọn ít nhất một đơn hàng');
+      return;
+    }
+
+    try {
+      switch (action) {
+        case 'confirm':
+          await ordersService.bulkUpdateOrderStatus(selectedOrders, 'confirmed');
+          setOrders(orders.map(order => 
+            selectedOrders.includes(order.id) 
+              ? { ...order, status: 'confirmed' as any, updatedAt: new Date().toISOString() }
+              : order
+          ));
+          break;
+        case 'ship':
+          await ordersService.bulkUpdateOrderStatus(selectedOrders, 'shipped');
+          setOrders(orders.map(order => 
+            selectedOrders.includes(order.id) 
+              ? { ...order, status: 'shipped' as any, updatedAt: new Date().toISOString() }
+              : order
+          ));
+          break;
+        case 'deliver':
+          await ordersService.bulkUpdateOrderStatus(selectedOrders, 'delivered');
+          setOrders(orders.map(order => 
+            selectedOrders.includes(order.id) 
+              ? { ...order, status: 'delivered' as any, updatedAt: new Date().toISOString() }
+              : order
+          ));
+          break;
+        case 'cancel':
+          if (confirm(`Bạn có chắc chắn muốn hủy ${selectedOrders.length} đơn hàng đã chọn?`)) {
+            await ordersService.bulkUpdateOrderStatus(selectedOrders, 'cancelled');
+            setOrders(orders.map(order => 
+              selectedOrders.includes(order.id) 
+                ? { ...order, status: 'cancelled' as any, updatedAt: new Date().toISOString() }
+                : order
+            ));
+          }
+          break;
+        case 'delete':
+          if (confirm(`Bạn có chắc chắn muốn xóa ${selectedOrders.length} đơn hàng đã chọn?`)) {
+            // Implement delete logic here if needed
+            console.log('Delete orders:', selectedOrders);
+          }
+          break;
+        default:
+          console.log(`Bulk action: ${action} for orders:`, selectedOrders);
+      }
+      setSelectedOrders([]);
+    } catch (error) {
+      console.error('❌ Error performing bulk action:', error);
+      alert('Không thể thực hiện hành động. Vui lòng thử lại.');
+    }
   };
 
-  const handleDeleteOrder = (orderId: string) => {
+  const handleDeleteOrder = async (orderId: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa đơn hàng này?')) {
-      setOrders(orders.filter(order => order.id !== orderId));
+      try {
+        await ordersService.cancelOrder(orderId, 'Đã xóa bởi admin');
+        setOrders(orders.filter(order => order.id !== orderId));
+        console.log(`✅ Order ${orderId} deleted successfully`);
+      } catch (error) {
+        console.error('❌ Error deleting order:', error);
+        alert('Không thể xóa đơn hàng. Vui lòng thử lại.');
+      }
     }
   };
 

@@ -108,12 +108,20 @@ const ProductForm: React.FC<ProductFormProps> = ({
     const loadBrands = async () => {
       try {
         setLoadingBrands(true);
-        const response = await productService.getAdminBrands();
-        if (response && response.success && Array.isArray(response.data)) {
-          setBrands(response.data);
+        console.log('🔄 Loading brands from API...');
+        // Use public API endpoint instead of admin endpoint
+        const response = await productService.getBrands();
+        console.log('🎯 Brands API response:', response);
+        if (response && Array.isArray(response)) {
+          setBrands(response);
+          console.log('✅ Brands set:', response);
+        } else {
+          console.log('⚠️ Invalid brands response, using fallback');
+          // Fallback to default brands if API fails
+          setBrands(['Apple', 'Dell', 'HP', 'Asus', 'Lenovo', 'MSI', 'Acer', 'LG', 'Gigabyte', 'Razer']);
         }
       } catch (error) {
-        console.error('Error loading brands:', error);
+        console.error('❌ Error loading brands:', error);
         // Fallback to default brands if API fails
         setBrands(['Apple', 'Dell', 'HP', 'Asus', 'Lenovo', 'MSI', 'Acer', 'LG', 'Gigabyte', 'Razer']);
       } finally {

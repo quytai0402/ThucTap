@@ -135,12 +135,23 @@ const AdminCustomers = () => {
     }
   };
 
-  const handleStatusChange = (customerId: string, newStatus: string) => {
-    setCustomers(customers.map(customer => 
-      customer.id === customerId 
-        ? { ...customer, status: newStatus as any, updatedAt: new Date().toISOString() }
-        : customer
-    ));
+  const handleStatusChange = async (customerId: string, newStatus: string) => {
+    try {
+      // Gọi API để cập nhật trong database
+      await customerService.updateCustomerStatus(customerId, newStatus as any);
+      
+      // Cập nhật state local sau khi API thành công
+      setCustomers(customers.map(customer => 
+        customer.id === customerId 
+          ? { ...customer, status: newStatus as any, updatedAt: new Date().toISOString() }
+          : customer
+      ));
+      
+      console.log(`✅ Customer ${customerId} status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('❌ Error updating customer status:', error);
+      alert('Không thể cập nhật trạng thái khách hàng. Vui lòng thử lại.');
+    }
   };
 
   const handleSelectCustomer = (customerId: string) => {
@@ -159,14 +170,66 @@ const AdminCustomers = () => {
     }
   };
 
-  const handleBulkAction = (action: string) => {
-    console.log(`Bulk action: ${action} for customers:`, selectedCustomers);
-    // Implement bulk actions here
+  const handleBulkAction = async (action: string) => {
+    if (selectedCustomers.length === 0) {
+      alert('Vui lòng chọn ít nhất một khách hàng');
+      return;
+    }
+
+    try {
+      switch (action) {
+        case 'activate':
+          await customerService.bulkUpdateStatus(selectedCustomers, 'active');
+          setCustomers(customers.map(customer => 
+            selectedCustomers.includes(customer.id) 
+              ? { ...customer, status: 'active' as any, updatedAt: new Date().toISOString() }
+              : customer
+          ));
+          break;
+        case 'deactivate':
+          await customerService.bulkUpdateStatus(selectedCustomers, 'inactive');
+          setCustomers(customers.map(customer => 
+            selectedCustomers.includes(customer.id) 
+              ? { ...customer, status: 'inactive' as any, updatedAt: new Date().toISOString() }
+              : customer
+          ));
+          break;
+        case 'block':
+          if (confirm(`Bạn có chắc chắn muốn khóa ${selectedCustomers.length} khách hàng đã chọn?`)) {
+            await customerService.bulkUpdateStatus(selectedCustomers, 'blocked');
+            setCustomers(customers.map(customer => 
+              selectedCustomers.includes(customer.id) 
+                ? { ...customer, status: 'blocked' as any, updatedAt: new Date().toISOString() }
+                : customer
+            ));
+          }
+          break;
+        case 'delete':
+          if (confirm(`Bạn có chắc chắn muốn xóa ${selectedCustomers.length} khách hàng đã chọn?`)) {
+            await customerService.bulkDeleteCustomers(selectedCustomers);
+            setCustomers(customers.filter(customer => !selectedCustomers.includes(customer.id)));
+          }
+          break;
+        default:
+          console.log(`Bulk action: ${action} for customers:`, selectedCustomers);
+      }
+      setSelectedCustomers([]);
+    } catch (error) {
+      console.error('❌ Error performing bulk action:', error);
+      alert('Không thể thực hiện hành động. Vui lòng thử lại.');
+    }
   };
 
-  const handleDeleteCustomer = (customerId: string) => {
+  const handleDeleteCustomer = async (customerId: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa khách hàng này?')) {
-      setCustomers(customers.filter(customer => customer.id !== customerId));
+      try {
+        await customerService.deleteCustomer(customerId);
+        setCustomers(customers.filter(customer => customer.id !== customerId));
+        console.log(`✅ Customer ${customerId} deleted successfully`);
+      } catch (error) {
+        console.error('❌ Error deleting customer:', error);
+        alert('Không thể xóa khách hàng. Vui lòng thử lại.');
+      }
     }
   };
 
