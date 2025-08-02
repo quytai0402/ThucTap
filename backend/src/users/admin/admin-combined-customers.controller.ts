@@ -3,10 +3,12 @@ import {
   Get,
   Query,
   UseGuards,
+  Param,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from '../users.service';
 import { GuestCustomerService } from '../../guest-customer/guest-customer.service';
+import { OrdersService } from '../../orders/orders.service';
 import { UserRole } from '../../common/schemas/user.schema';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -20,7 +22,8 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 export class AdminCombinedCustomersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly guestCustomerService: GuestCustomerService
+    private readonly guestCustomerService: GuestCustomerService,
+    private readonly ordersService: OrdersService
   ) {}
 
   @Get()
@@ -36,55 +39,65 @@ export class AdminCombinedCustomersController {
     const pageNum = +page;
     const limitNum = +limit;
     
-    // Get registered customers
-    const registeredResult = await this.usersService.findAll(pageNum, limitNum, UserRole.CUSTOMER);
+    // Get registered customers with real order statistics from delivered orders
+    const registeredResult = await this.usersService.getCustomersWithRealOrderStats(pageNum, limitNum);
     
-    // Get guest customers
-    const guestResult = await this.guestCustomerService.getAllGuestCustomers(pageNum, limitNum, search);
+    // Get guest customers with real order statistics from delivered orders
+    const guestResult = await this.guestCustomerService.getAllGuestCustomersWithRealStats(pageNum, limitNum, search);
     
     // Transform guest customers to match user format
-    const formattedGuestCustomers = guestResult.customers.map(guest => {
-      // Safely convert to plain object
-      const guestObj = JSON.parse(JSON.stringify(guest));
-      return {
-        id: guestObj._id.toString(),
-        fullName: guestObj.fullName || 'Guest Customer',
-        email: guestObj.email || '',
-        phone: guestObj.phone,
-        address: guestObj.lastAddress?.address || '',
-        city: guestObj.lastAddress?.city || '',
-        district: guestObj.lastAddress?.district || '',
-        ward: guestObj.lastAddress?.ward || '',
-        totalOrders: guestObj.totalOrders || 0,
-        successfulOrders: guestObj.successfulOrders || 0,
-        totalSpent: guestObj.totalSpent || 0,
-        lastOrderDate: guestObj.lastOrder?.orderDate || null,
-        customerLevel: guestObj.customerLevel,
-        loyaltyPoints: guestObj.loyaltyPoints || 0,
-        status: 'active', // Guest customers are always considered active
-        createdAt: guestObj.createdAt,
-        updatedAt: guestObj.updatedAt,
-        isGuest: true // Add a flag to identify guest customers
-      };
-    });
+    // Map guest customers to include order statistics from delivered orders only
+    const guestCustomers = guestResult.customers.map(guest => ({
+      _id: guest._id,
+      fullName: guest.fullName,
+      phone: guest.phone,
+      email: guest.email || 'Không có email',
+      isGuest: true,
+      orderCount: guest.realSuccessfulOrders || 0,
+      totalSpent: guest.realTotalSpent || 0,
+      lastOrderDate: guest.realLastOrderDate || null,
+      avatar: null,
+      createdAt: guest.createdAt,
+      // Add fields for compatibility with registered customers
+      totalOrders: guest.realSuccessfulOrders || 0,
+      successfulOrders: guest.realSuccessfulOrders || 0,
+      status: 'active', // Guest customers are always active
+      city: '', // Guests don't have city info
+      address: '',
+      district: '',
+      ward: '',
+      customerLevel: 'Bronze',
+      loyaltyPoints: 0
+    }));
     
-    // Add isGuest: false flag to registered customers
+    // Add isGuest: false flag to registered customers and format properly
     const formattedRegisteredCustomers = registeredResult.users.map(user => {
-      // Safely convert to plain object
-      const userObj = JSON.parse(JSON.stringify(user));
+      // Handle aggregation result (no .toObject() needed)
+      const userObj = user;
       return {
-        ...userObj,
         id: userObj._id.toString(),
+        fullName: userObj.fullName || userObj.name || 'N/A',
+        email: userObj.email || '',
+        phone: userObj.phone || '',
         address: userObj.addresses?.[0]?.address || '',
         city: userObj.addresses?.[0]?.city || '',
         district: userObj.addresses?.[0]?.district || '',
         ward: userObj.addresses?.[0]?.ward || '',
+        totalOrders: userObj.realSuccessfulOrders || 0, // Use real stats from delivered orders only
+        successfulOrders: userObj.realSuccessfulOrders || 0,
+        totalSpent: userObj.realTotalSpent || 0, // Use real stats from delivered orders only
+        lastOrderDate: userObj.realLastOrderDate || null,
+        customerLevel: userObj.customerLevel || 'Bronze',
+        loyaltyPoints: userObj.loyaltyPoints || 0,
+        status: userObj.status || 'active',
+        createdAt: userObj.createdAt,
+        updatedAt: userObj.updatedAt,
         isGuest: false
       };
     });
     
     // Combine both customer types
-    let combinedCustomers = [...formattedRegisteredCustomers, ...formattedGuestCustomers];
+    let combinedCustomers = [...formattedRegisteredCustomers, ...guestCustomers];
     
     // Apply search filter if provided
     if (search) {
@@ -122,5 +135,76 @@ export class AdminCombinedCustomersController {
       totalPages: Math.ceil(total / limitNum),
       currentPage: pageNum
     };
+  }
+
+  @Get(':customerId/details')
+  @ApiOperation({ summary: 'Get customer details (registered or guest)' })
+  async getCustomerDetails(
+    @Param('customerId') customerId: string,
+    @Query('isGuest') isGuest: string = 'false'
+  ) {
+    const isGuestBool = isGuest === 'true';
+    
+    if (isGuestBool) {
+      // Get guest customer details
+      const guestCustomer = await this.guestCustomerService.findById(customerId);
+      if (!guestCustomer) {
+        throw new Error('Guest customer not found');
+      }
+      
+      return {
+        ...guestCustomer.toObject(),
+        isGuest: true
+      };
+    } else {
+      // Get registered customer details
+      const user = await this.usersService.findOne(customerId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      return {
+        ...user,
+        isGuest: false
+      };
+    }
+  }
+
+  @Get(':customerId/orders')
+  @ApiOperation({ summary: 'Get customer orders (registered or guest)' })
+  async getCustomerOrders(
+    @Param('customerId') customerId: string,
+    @Query('isGuest') isGuest: string = 'false',
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10'
+  ) {
+    const isGuestBool = isGuest === 'true';
+    const pageNum = +page;
+    const limitNum = +limit;
+    
+    if (isGuestBool) {
+      // Get orders for guest customer by phone
+      const guestCustomer = await this.guestCustomerService.findById(customerId);
+      if (!guestCustomer) {
+        throw new Error('Guest customer not found');
+      }
+      
+      const orders = await this.ordersService.findGuestOrdersByPhone(guestCustomer.phone);
+      
+      // Apply pagination manually since original method doesn't support it
+      const total = orders.length;
+      const startIndex = (pageNum - 1) * limitNum;
+      const paginatedOrders = orders.slice(startIndex, startIndex + limitNum);
+      
+      return {
+        orders: paginatedOrders,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        currentPage: pageNum
+      };
+    } else {
+      // Get orders for registered customer - need to create this method
+      return this.ordersService.findOrdersByUserId(customerId, pageNum, limitNum);
+    }
   }
 }

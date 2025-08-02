@@ -27,6 +27,10 @@ export class GuestCustomerService {
     return this.guestCustomerModel.findOne({ phone });
   }
 
+  async findById(id: string): Promise<GuestCustomerDocument | null> {
+    return this.guestCustomerModel.findById(id);
+  }
+
   async createOrUpdate(
     guestInfo: GuestCustomerInfo, 
     order: OrderDocument
@@ -167,6 +171,117 @@ export class GuestCustomerService {
     
     return {
       customers,
+      total,
+      totalPages: Math.ceil(total / limit)
+    };
+  }
+
+  async getAllGuestCustomersWithRealStats(
+    page: number = 1,
+    limit: number = 10,
+    search?: string
+  ): Promise<{ 
+    customers: any[],
+    total: number,
+    totalPages: number
+  }> {
+    const query: any = {};
+    
+    if (search) {
+      query.$or = [
+        { phone: { $regex: search, $options: 'i' } },
+        { fullName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    const skip = (page - 1) * limit;
+    
+    // Get guest customers with real order statistics from delivered orders
+    const customersWithStats = await this.guestCustomerModel.aggregate([
+      { $match: query },
+      {
+        $lookup: {
+          from: 'orders',
+          let: { customerPhone: '$phone' },
+          pipeline: [
+            { 
+              $match: { 
+                $expr: { 
+                  $and: [
+                    { $eq: ['$shippingAddress.phone', '$$customerPhone'] },
+                    { $eq: ['$isGuestOrder', true] }
+                  ]
+                }
+              }
+            },
+            {
+              $facet: {
+                // All orders stats
+                allOrders: [
+                  {
+                    $group: {
+                      _id: null,
+                      totalOrders: { $sum: 1 },
+                      lastOrderDate: { $max: '$createdAt' }
+                    }
+                  }
+                ],
+                // Delivered orders stats (for revenue calculation)
+                deliveredOrders: [
+                  { $match: { status: 'delivered' } },
+                  {
+                    $group: {
+                      _id: null,
+                      successfulOrders: { $sum: 1 },
+                      totalSpent: { $sum: '$total' }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          as: 'orderStats'
+        }
+      },
+      {
+        $addFields: {
+          realTotalOrders: { 
+            $ifNull: [
+              { $arrayElemAt: ['$orderStats.allOrders.totalOrders', 0] }, 
+              0
+            ]
+          },
+          realSuccessfulOrders: { 
+            $ifNull: [
+              { $arrayElemAt: ['$orderStats.deliveredOrders.successfulOrders', 0] }, 
+              0
+            ]
+          },
+          realTotalSpent: { 
+            $ifNull: [
+              { $arrayElemAt: ['$orderStats.deliveredOrders.totalSpent', 0] }, 
+              0
+            ]
+          },
+          realLastOrderDate: { 
+            $ifNull: [
+              { $arrayElemAt: ['$orderStats.allOrders.lastOrderDate', 0] }, 
+              '$lastOrder.orderDate'
+            ]
+          }
+        }
+      },
+      { $project: { orderStats: 0 } },
+      { $sort: { realTotalOrders: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ]);
+    
+    const total = await this.guestCustomerModel.countDocuments(query);
+    
+    return {
+      customers: customersWithStats,
       total,
       totalPages: Math.ceil(total / limit)
     };

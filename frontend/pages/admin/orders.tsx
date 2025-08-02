@@ -333,7 +333,10 @@ const AdminOrders = () => {
     pendingOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'pending').length : 0,
     processingOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'processing').length : 0,
     completedOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'delivered').length : 0,
-    totalRevenue: orders && Array.isArray(orders) ? orders.reduce((sum, order) => sum + order.total, 0) : 0
+    // Chỉ tính doanh thu từ đơn hàng đã giao
+    totalRevenue: orders && Array.isArray(orders) ? orders
+      .filter(order => order.status === 'delivered')
+      .reduce((sum, order) => sum + order.total, 0) : 0
   };
 
   return (

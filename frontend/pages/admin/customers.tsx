@@ -39,6 +39,27 @@ interface Customer {
   customerLevel?: string;
 }
 
+interface CustomerDetails extends Customer {
+  orders?: Order[];
+  fullDetails?: any;
+  fullName?: string;
+  lastAddress?: {
+    address: string;
+    city: string;
+    district: string;
+    ward: string;
+  };
+}
+
+interface Order {
+  _id: string;
+  orderNumber: string;
+  total: number;
+  status: string;
+  createdAt: string;
+  items: any[];
+}
+
 const AdminCustomers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +69,9 @@ const AdminCustomers = () => {
   const [customerTypeFilter, setCustomerTypeFilter] = useState('all');
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [showCustomerDetail, setShowCustomerDetail] = useState<string | null>(null);
+  const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
+  const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -86,6 +110,38 @@ const AdminCustomers = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadCustomerDetails = async (customerId: string, isGuest: boolean) => {
+    try {
+      setLoadingDetails(true);
+      
+      // Load customer details
+      const [detailsResponse, ordersResponse] = await Promise.all([
+        fetch(`/api/admin/combined-customers/${customerId}/details?isGuest=${isGuest}`),
+        fetch(`/api/admin/combined-customers/${customerId}/orders?isGuest=${isGuest}&limit=10`)
+      ]);
+      
+      if (!detailsResponse.ok || !ordersResponse.ok) {
+        throw new Error('Failed to load customer details');
+      }
+      
+      const details = await detailsResponse.json();
+      const ordersData = await ordersResponse.json();
+      
+      setCustomerDetails(details);
+      setCustomerOrders(ordersData.orders || []);
+    } catch (error) {
+      console.error('Error loading customer details:', error);
+      alert('Không thể tải thông tin chi tiết khách hàng');
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
+
+  const handleViewCustomer = async (customer: Customer) => {
+    setShowCustomerDetail(customer.id);
+    await loadCustomerDetails(customer.id, customer.isGuest || false);
   };
 
   const filteredCustomers = customers.filter(customer => {
@@ -247,10 +303,12 @@ const AdminCustomers = () => {
     blockedCustomers: customers.filter(c => c.status === 'blocked').length,
     guestCustomers: customers.filter(c => c.isGuest).length,
     registeredCustomers: customers.filter(c => !c.isGuest).length,
-    totalRevenue: customers.reduce((sum, customer) => sum + customer.totalSpent, 0),
+    // Tính doanh thu từ khách hàng đã có đơn hàng hoàn thành
+    totalRevenue: customers.reduce((sum, customer) => sum + (customer.totalSpent || 0), 0),
+    // Tính giá trị trung bình đơn hàng dựa trên khách hàng có đơn hàng
     averageOrderValue: customers.length > 0 ? 
-      customers.reduce((sum, customer) => sum + customer.totalSpent, 0) / 
-      customers.reduce((sum, customer) => sum + customer.totalOrders, 0) : 0
+      customers.reduce((sum, customer) => sum + (customer.totalSpent || 0), 0) / 
+      Math.max(customers.reduce((sum, customer) => sum + (customer.totalOrders || 0), 0), 1) : 0
   };
 
   return (
@@ -581,7 +639,7 @@ const AdminCustomers = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
                         <button
-                          onClick={() => setShowCustomerDetail(customer.id)}
+                          onClick={() => handleViewCustomer(customer)}
                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                         >
                           <EyeIcon className="h-4 w-4" />
@@ -678,144 +736,187 @@ const AdminCustomers = () => {
               <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={() => setShowCustomerDetail(null)}></div>
               
               <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-                {(() => {
-                  const customer = customers.find(c => c.id === showCustomerDetail);
-                  if (!customer) return null;
-                  
-                  return (
-                    <>
-                      <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div className="flex items-center justify-between mb-6">
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
-                            Chi tiết khách hàng: {customer.name}
-                            {customer.isGuest && (
-                              <span className="ml-3 px-2.5 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
-                                Khách vãng lai
-                              </span>
-                            )}
-                          </h3>
-                          <button
-                            onClick={() => setShowCustomerDetail(null)}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                          >
-                            <XMarkIcon className="h-6 w-6" />
-                          </button>
-                        </div>
+                <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+                      Chi tiết khách hàng
+                      {customerDetails?.isGuest && (
+                        <span className="ml-3 px-2.5 py-0.5 text-xs font-medium rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                          Khách vãng lai
+                        </span>
+                      )}
+                    </h3>
+                    <button
+                      onClick={() => setShowCustomerDetail(null)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      <XMarkIcon className="h-6 w-6" />
+                    </button>
+                  </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {/* Personal Info */}
-                          <div className="space-y-4">
-                            <h4 className="font-medium text-gray-900 dark:text-white">Thông tin cá nhân</h4>
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
-                              <div className="flex items-center">
-                                <UserIcon className="h-5 w-5 text-gray-400 mr-3" />
-                                <div>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">Họ tên</p>
-                                  <p className="font-medium">{customer.name}</p>
-                                </div>
+                  {loadingDetails ? (
+                    <div className="flex justify-center items-center h-64">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : customerDetails ? (
+                    <>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Personal Info */}
+                        <div className="space-y-4">
+                          <h4 className="font-medium text-gray-900 dark:text-white">Thông tin cá nhân</h4>
+                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
+                            <div className="flex items-center">
+                              <UserIcon className="h-5 w-5 text-gray-400 mr-3" />
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Họ tên</p>
+                                <p className="font-medium text-gray-900 dark:text-white">{customerDetails.fullName || customerDetails.name}</p>
                               </div>
-                              <div className="flex items-center">
-                                <EnvelopeIcon className="h-5 w-5 text-gray-400 mr-3" />
-                                <div>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
-                                  <p className="font-medium">{customer.email}</p>
-                                </div>
+                            </div>
+                            <div className="flex items-center">
+                              <EnvelopeIcon className="h-5 w-5 text-gray-400 mr-3" />
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                                <p className="font-medium text-gray-900 dark:text-white">{customerDetails.email || 'Không có'}</p>
                               </div>
-                              <div className="flex items-center">
-                                <PhoneIcon className="h-5 w-5 text-gray-400 mr-3" />
-                                <div>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">Điện thoại</p>
-                                  <p className="font-medium">{customer.phone}</p>
-                                </div>
+                            </div>
+                            <div className="flex items-center">
+                              <PhoneIcon className="h-5 w-5 text-gray-400 mr-3" />
+                              <div>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Điện thoại</p>
+                                <p className="font-medium text-gray-900 dark:text-white">{customerDetails.phone}</p>
                               </div>
+                            </div>
+                            {customerDetails.lastAddress && (
                               <div className="flex items-start">
                                 <MapPinIcon className="h-5 w-5 text-gray-400 mr-3 mt-0.5" />
                                 <div>
                                   <p className="text-sm text-gray-500 dark:text-gray-400">Địa chỉ</p>
-                                  <p className="font-medium">{customer.address}</p>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">{customer.district}, {customer.city}</p>
+                                  <p className="font-medium text-gray-900 dark:text-white">
+                                    {customerDetails.lastAddress.address}, {customerDetails.lastAddress.ward}, {customerDetails.lastAddress.district}, {customerDetails.lastAddress.city}
+                                  </p>
                                 </div>
                               </div>
-                            </div>
-                          </div>
-
-                          {/* Order Stats */}
-                          <div className="space-y-4">
-                            <h4 className="font-medium text-gray-900 dark:text-white">Thống kê mua hàng</h4>
-                            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500 dark:text-gray-400">Tổng đơn hàng:</span>
-                                <span className="font-medium">{customer.totalOrders}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500 dark:text-gray-400">Tổng chi tiêu:</span>
-                                <span className="font-medium">{formatCurrency(customer.totalSpent)}</span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500 dark:text-gray-400">Giá trị TB/đơn:</span>
-                                <span className="font-medium">
-                                  {customer.totalOrders > 0 ? formatCurrency(customer.totalSpent / customer.totalOrders) : '0₫'}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500 dark:text-gray-400">Đơn hàng cuối:</span>
-                                <span className="font-medium">{formatDate(customer.lastOrderDate)}</span>
-                              </div>
-                              {customer.isGuest && customer.successfulOrders !== undefined && (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">Đơn thành công:</span>
-                                  <span className="font-medium">{customer.successfulOrders} đơn ({Math.round((customer.successfulOrders / customer.totalOrders) * 100)}%)</span>
-                                </div>
-                              )}
-                              {customer.isGuest && customer.customerLevel && (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">Hạng khách hàng:</span>
-                                  <span className="font-medium">{customer.customerLevel}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500 dark:text-gray-400">Trạng thái:</span>
-                                <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(customer.status)}`}>
-                                  {getStatusText(customer.status)}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500 dark:text-gray-400">Ngày tham gia:</span>
-                                <span className="font-medium">{formatDate(customer.createdAt)}</span>
-                              </div>
-                            </div>
+                            )}
                           </div>
                         </div>
 
-                        {/* Recent Orders Section */}
-                        <div className="mt-6">
-                          <h4 className="font-medium text-gray-900 dark:text-white mb-4">Đơn hàng gần đây</h4>
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
-                              Chức năng hiển thị đơn hàng gần đây sẽ được phát triển trong phiên bản tiếp theo
-                            </p>
+                        {/* Order Stats */}
+                        <div className="space-y-4">
+                          <h4 className="font-medium text-gray-900 dark:text-white">Thống kê mua hàng</h4>
+                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">Tổng đơn hàng:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{customerDetails.totalOrders || 0}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">Tổng chi tiêu:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(customerDetails.totalSpent || 0)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">Giá trị TB/đơn:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {customerDetails.totalOrders > 0 ? formatCurrency((customerDetails.totalSpent || 0) / (customerDetails.totalOrders || 1)) : '0₫'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">Đơn hàng cuối:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{formatDate(customerDetails.lastOrderDate)}</span>
+                            </div>
+                            {customerDetails.isGuest && customerDetails.successfulOrders !== undefined && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-500 dark:text-gray-400">Đơn thành công:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                  {customerDetails.successfulOrders} đơn ({customerDetails.totalOrders > 0 ? Math.round((customerDetails.successfulOrders / customerDetails.totalOrders) * 100) : 0}%)
+                                </span>
+                              </div>
+                            )}
+                            {customerDetails.customerLevel && (
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-500 dark:text-gray-400">Hạng khách hàng:</span>
+                                <span className="font-medium text-gray-900 dark:text-white">{customerDetails.customerLevel}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">Trạng thái:</span>
+                              <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(customerDetails.status || 'active')}`}>
+                                {getStatusText(customerDetails.status || 'active')}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500 dark:text-gray-400">Ngày tham gia:</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{formatDate(customerDetails.createdAt)}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
 
-                      <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button
-                          onClick={() => console.log('Edit customer:', customer.id)}
-                          className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-                        >
-                          <PencilIcon className="h-4 w-4 mr-2" />
-                          Chỉnh sửa
-                        </button>
-                        <button
-                          onClick={() => setShowCustomerDetail(null)}
-                          className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                        >
-                          Đóng
-                        </button>
+                      {/* Recent Orders Section */}
+                      <div className="mt-6">
+                        <h4 className="font-medium text-gray-900 dark:text-white mb-4">Đơn hàng gần đây</h4>
+                        <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 max-h-96 overflow-y-auto">
+                          {loadingDetails ? (
+                            <div className="flex justify-center py-8">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            </div>
+                          ) : customerOrders.length > 0 ? (
+                            <div className="space-y-3">
+                              {customerOrders.map((order) => (
+                                <div key={order._id} className="bg-white dark:bg-gray-600 rounded-lg p-3 border border-gray-200 dark:border-gray-500">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                      <p className="font-medium text-gray-900 dark:text-white">#{order.orderNumber}</p>
+                                      <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(order.createdAt)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-medium text-gray-900 dark:text-white">{formatCurrency(order.total)}</p>
+                                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                        order.status === 'delivered' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                                        order.status === 'processing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+                                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
+                                        'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-300'
+                                      }`}>
+                                        {order.status === 'delivered' ? 'Đã giao' :
+                                         order.status === 'processing' ? 'Đang xử lý' :
+                                         order.status === 'pending' ? 'Chờ xác nhận' : order.status}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-sm text-gray-600 dark:text-gray-300">
+                                    {order.items?.length} sản phẩm
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                              Chưa có đơn hàng nào
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </>
-                  );
-                })()}
+                  ) : (
+                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      Không tìm thấy thông tin khách hàng
+                    </p>
+                  )}
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-900 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    onClick={() => console.log('Edit customer:', showCustomerDetail)}
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    <PencilIcon className="h-4 w-4 mr-2" />
+                    Chỉnh sửa
+                  </button>
+                  <button
+                    onClick={() => setShowCustomerDetail(null)}
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                  >
+                    Đóng
+                  </button>
+                </div>
               </div>
             </div>
           </div>

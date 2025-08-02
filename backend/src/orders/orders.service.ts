@@ -539,6 +539,34 @@ export class OrdersService {
     return orders;
   }
 
+  async findOrdersByUserId(userId: string, page: number = 1, limit: number = 10): Promise<any> {
+    const skip = (page - 1) * limit;
+    
+    // Get orders for registered user
+    const query = {
+      isGuestOrder: false,
+      customer: userId
+    };
+    
+    const [orders, total] = await Promise.all([
+      this.orderModel
+        .find(query)
+        .populate('items.product')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.orderModel.countDocuments(query)
+    ]);
+    
+    return {
+      orders,
+      total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page
+    };
+  }
+
   async getOrderTracking(orderId: string, customerId: string): Promise<any> {
     const order = await this.orderModel
       .findOne({ _id: orderId, customer: customerId })

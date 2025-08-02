@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
 import { User, UserDocument, UserRole } from '../common/schemas/user.schema';
+import { Order } from '../common/schemas/order.schema';
 
 export interface CreateUserDto {
   email: string;
@@ -32,6 +33,7 @@ export interface UpdateUserDto {
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Order.name) private orderModel: Model<Order>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -51,6 +53,158 @@ export class UsersService {
     });
 
     return user.save();
+  }
+
+  async getCustomersWithOrderStats(page = 1, limit = 10): Promise<{
+    users: any[];
+    total: number;
+    totalPages: number;
+  }> {
+    const skip = (page - 1) * limit;
+    
+    // Get users with order statistics
+    const usersWithStats = await this.userModel.aggregate([
+      { $match: { role: 'customer' } },
+      {
+        $lookup: {
+          from: 'orders',
+          let: { userId: '$_id' },
+          pipeline: [
+            { $match: { 
+              $expr: { $eq: ['$customer', '$$userId'] }
+            }},
+            {
+              $group: {
+                _id: null,
+                totalOrders: { $sum: 1 },
+                successfulOrders: { 
+                  $sum: { 
+                    $cond: [{ $eq: ['$status', 'delivered'] }, 1, 0] 
+                  }
+                },
+                totalSpent: { 
+                  $sum: { 
+                    $cond: [{ $eq: ['$status', 'delivered'] }, '$total', 0] 
+                  }
+                },
+                lastOrderDate: { $max: '$createdAt' }
+              }
+            }
+          ],
+          as: 'orderStats'
+        }
+      },
+      {
+        $addFields: {
+          totalOrders: { $arrayElemAt: ['$orderStats.totalOrders', 0] },
+          successfulOrders: { $arrayElemAt: ['$orderStats.successfulOrders', 0] },
+          totalSpent: { $arrayElemAt: ['$orderStats.totalSpent', 0] },
+          lastOrderDate: { $arrayElemAt: ['$orderStats.lastOrderDate', 0] }
+        }
+      },
+      { $project: { password: 0, orderStats: 0 } },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ]);
+    
+    const total = await this.userModel.countDocuments({ role: 'customer' });
+    
+    return {
+      users: usersWithStats,
+      total,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getCustomersWithRealOrderStats(page = 1, limit = 10): Promise<{
+    users: any[];
+    total: number;
+    totalPages: number;
+  }> {
+    const skip = (page - 1) * limit;
+    
+    // Get users with REAL order statistics - only from delivered orders
+    const usersWithStats = await this.userModel.aggregate([
+      { $match: { role: 'customer' } },
+      {
+        $lookup: {
+          from: 'orders',
+          let: { userId: '$_id' },
+          pipeline: [
+            { $match: { 
+              $expr: { $eq: ['$customer', '$$userId'] }
+            }},
+            {
+              $facet: {
+                // All orders stats
+                allOrders: [
+                  {
+                    $group: {
+                      _id: null,
+                      totalOrders: { $sum: 1 },
+                      lastOrderDate: { $max: '$createdAt' }
+                    }
+                  }
+                ],
+                // Delivered orders stats (for revenue calculation)
+                deliveredOrders: [
+                  { $match: { status: 'delivered' } },
+                  {
+                    $group: {
+                      _id: null,
+                      successfulOrders: { $sum: 1 },
+                      totalSpent: { $sum: '$total' }
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          as: 'orderStats'
+        }
+      },
+      {
+        $addFields: {
+          totalOrders: { 
+            $ifNull: [
+              { $arrayElemAt: ['$orderStats.allOrders.totalOrders', 0] }, 
+              0
+            ]
+          },
+          successfulOrders: { 
+            $ifNull: [
+              { $arrayElemAt: ['$orderStats.deliveredOrders.successfulOrders', 0] }, 
+              0
+            ]
+          },
+          totalSpent: { 
+            $ifNull: [
+              { $arrayElemAt: ['$orderStats.deliveredOrders.totalSpent', 0] }, 
+              0
+            ]
+          },
+          lastOrderDate: { 
+            $ifNull: [
+              { $arrayElemAt: ['$orderStats.allOrders.lastOrderDate', 0] }, 
+              null
+            ]
+          }
+        }
+      },
+      { $project: { password: 0, orderStats: 0 } },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit }
+    ]);
+    
+    const total = await this.userModel.countDocuments({ role: 'customer' });
+    
+    return {
+      users: usersWithStats,
+      total,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findAll(page = 1, limit = 10, role?: UserRole): Promise<{
