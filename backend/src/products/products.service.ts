@@ -112,7 +112,9 @@ export class ProductsService {
       { new: true } // Return updated document
     );
     console.log('📊 Category after update:', updateResult?.productCount);
-    console.log('📊 Updated category product count for:', category.name);      return savedProduct;
+    console.log('📊 Updated category product count for:', category.name);
+    
+    return savedProduct;
     } catch (error) {
       console.error('❌ Error saving product:', error);
       throw error;
@@ -296,7 +298,16 @@ export class ProductsService {
   async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
     console.log('🔄 Updating product with data:', updateProductDto);
     
+    // Get current product to check if category is changing
+    const currentProduct = await this.productModel.findById(id).populate('category');
+    if (!currentProduct) {
+      throw new NotFoundException('Product not found');
+    }
+    
     let updateData: any = { ...updateProductDto };
+    let categoryChanged = false;
+    let oldCategoryId = currentProduct.category ? (currentProduct.category as any)._id : null;
+    let newCategoryId = oldCategoryId;
 
     // Regenerate slug if name is updated
     if (updateProductDto.name) {
@@ -323,7 +334,14 @@ export class ProductsService {
       }
       
       console.log(`📂 Found category: ${category.name} with ID: ${category._id}`);
+      newCategoryId = category._id;
       updateData.category = category._id;
+      
+      // Check if category changed
+      if (oldCategoryId && !oldCategoryId.equals(newCategoryId)) {
+        categoryChanged = true;
+        console.log(`📊 Category changed from ${oldCategoryId} to ${newCategoryId}`);
+      }
     }
 
     console.log('💾 Update data before save:', updateData);
@@ -334,6 +352,23 @@ export class ProductsService {
 
     if (!product) {
       throw new NotFoundException('Product not found');
+    }
+
+    // Update category product counts if category changed
+    if (categoryChanged && oldCategoryId && newCategoryId) {
+      // Decrease count for old category
+      await this.categoryModel.findByIdAndUpdate(
+        oldCategoryId,
+        { $inc: { productCount: -1 } }
+      );
+      console.log('📊 Decreased product count for old category');
+      
+      // Increase count for new category
+      await this.categoryModel.findByIdAndUpdate(
+        newCategoryId,
+        { $inc: { productCount: 1 } }
+      );
+      console.log('📊 Increased product count for new category');
     }
 
     console.log('✅ Product updated successfully:', product.name);
