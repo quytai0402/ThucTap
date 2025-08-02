@@ -29,7 +29,7 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
@@ -111,13 +111,26 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
   ];
 
   useEffect(() => {
-    if (isClient && (!user || user.role !== 'admin')) {
+    // Chỉ redirect khi đã hoàn thành verify token và không phải admin
+    if (isClient && !isLoading && (!user || user.role !== 'admin')) {
       router.push('/login');
     }
-  }, [user, router, isClient]);
+  }, [user, router, isClient, isLoading]);
 
-  if (!isClient || !user || user.role !== 'admin') {
-    return null;
+  // Hiển thị loading spinner khi đang verify authentication
+  if (!isClient || isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+          <p className="mt-2 text-gray-600">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== 'admin') {
+    return null; // Sẽ redirect trong useEffect
   }
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);

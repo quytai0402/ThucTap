@@ -8,17 +8,17 @@ import CategoriesSection from '../src/components/CategoriesSection';
 import { useAuth } from '../src/context/AuthContext';
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Auto-redirect admin to their dashboard
-    if (isAuthenticated && user) {
+    // Auto-redirect admin to their dashboard - chỉ sau khi hoàn thành authentication check
+    if (!isLoading && isAuthenticated && user) {
       if (user.role === 'admin') {
         router.push('/admin');
       }
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, isLoading]);
 
   return (
     <>
