@@ -188,7 +188,7 @@ export class OrdersService {
       this.orderModel
         .find(query)
         .populate('customer', 'fullName email phone')
-        .populate('items.product', 'name images price')
+        .populate('items.product', 'name images price slug')
         .skip(skip)
         .limit(limit)
         .sort(sort),
@@ -207,7 +207,7 @@ export class OrdersService {
     const order = await this.orderModel
       .findById(id)
       .populate('customer', 'fullName email phone address')
-      .populate('items.product', 'name images price specifications');
+      .populate('items.product', 'name images price specifications slug');
       
     if (!order) {
       throw new NotFoundException('Order not found');

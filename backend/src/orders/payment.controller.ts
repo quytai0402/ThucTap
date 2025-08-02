@@ -62,8 +62,8 @@ export class PaymentController {
   @Get('check-payment/:orderId')
   async checkPaymentStatus(@Param('orderId') orderId: string) {
     try {
-      // Find order by order number  
-      const order = await this.ordersService.findByOrderNumber(orderId);
+      // Find order by ID (not orderNumber)
+      const order = await this.ordersService.findOne(orderId);
       
       if (!order) {
         return {

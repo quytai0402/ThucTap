@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../src/components/AdminLayout';
+import SearchAndFilter, { FilterConfig } from '../../src/components/SearchAndFilter';
 import { customerService } from '../../src/services/customerService';
 import {
-  MagnifyingGlassIcon,
-  FunnelIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
@@ -64,9 +63,7 @@ const AdminCustomers = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [cityFilter, setCityFilter] = useState('all');
-  const [customerTypeFilter, setCustomerTypeFilter] = useState('all');
+  const [filters, setFilters] = useState<Record<string, any>>({});
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [showCustomerDetail, setShowCustomerDetail] = useState<string | null>(null);
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails | null>(null);
@@ -148,14 +145,65 @@ const AdminCustomers = () => {
     const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (customer.phone && customer.phone.includes(searchTerm));
-    const matchesStatus = statusFilter === 'all' || customer.status === statusFilter;
-    const matchesCity = cityFilter === 'all' || customer.city === cityFilter;
-    const matchesType = customerTypeFilter === 'all' || 
-                      (customerTypeFilter === 'guest' && customer.isGuest) || 
-                      (customerTypeFilter === 'registered' && !customer.isGuest);
+    const matchesStatus = !filters.status || customer.status === filters.status;
+    const matchesCity = !filters.city || customer.city === filters.city;
+    const matchesType = !filters.customerType || 
+                      (filters.customerType === 'guest' && customer.isGuest) || 
+                      (filters.customerType === 'registered' && !customer.isGuest);
     
     return matchesSearch && matchesStatus && matchesCity && matchesType;
   });
+
+  // Handle search
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  // Handle filter change
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    setFilters(newFilters);
+  };
+
+  // Handle reset
+  const handleReset = () => {
+    setSearchTerm('');
+    setFilters({});
+  };
+
+  // Get unique cities for filter
+  const uniqueCities = Array.from(new Set(customers.map(c => c.city).filter(Boolean)));
+
+  // Configure filters for admin customers
+  const filterConfigs: FilterConfig[] = [
+    {
+      key: 'status',
+      label: 'Trạng thái',
+      type: 'select',
+      options: [
+        { value: 'active', label: 'Hoạt động' },
+        { value: 'inactive', label: 'Không hoạt động' },
+        { value: 'blocked', label: 'Bị khóa' }
+      ]
+    },
+    {
+      key: 'customerType',
+      label: 'Loại khách hàng',
+      type: 'select',
+      options: [
+        { value: 'registered', label: 'Đã đăng ký' },
+        { value: 'guest', label: 'Khách vãng lai' }
+      ]
+    },
+    {
+      key: 'city',
+      label: 'Thành phố',
+      type: 'select',
+      options: uniqueCities.map(city => ({
+        value: city,
+        label: city
+      }))
+    }
+  ];
 
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -441,71 +489,45 @@ const AdminCustomers = () => {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Tìm kiếm khách hàng..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-              />
+        {/* Search and Filters */}
+        <div className="mb-6">
+          <SearchAndFilter
+            searchPlaceholder="Tìm kiếm khách hàng theo tên, email, số điện thoại..."
+            filters={filterConfigs}
+            onSearch={handleSearch}
+            onFilterChange={handleFilterChange}
+            onReset={handleReset}
+            initialValues={{ search: searchTerm, ...filters }}
+            compact={true}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+          />
+          
+          {/* Bulk Actions */}
+          {selectedCustomers.length > 0 && (
+            <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-blue-700 dark:text-blue-300">
+                  Đã chọn {selectedCustomers.length} khách hàng
+                </span>
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleBulkAction(e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                  className="px-3 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Chọn hành động...</option>
+                  <option value="export">Xuất đã chọn</option>
+                  <option value="activate">Kích hoạt</option>
+                  <option value="deactivate">Vô hiệu hóa</option>
+                  <option value="block">Khóa tài khoản</option>
+                  <option value="delete">Xóa đã chọn</option>
+                </select>
+              </div>
             </div>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="active">Hoạt động</option>
-              <option value="inactive">Không hoạt động</option>
-              <option value="blocked">Bị khóa</option>
-            </select>
-
-            <select
-              value={customerTypeFilter}
-              onChange={(e) => setCustomerTypeFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">Tất cả khách hàng</option>
-              <option value="registered">Khách hàng đã đăng ký</option>
-              <option value="guest">Khách vãng lai</option>
-            </select>
-
-            <select
-              value={cityFilter}
-              onChange={(e) => setCityFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">Tất cả thành phố</option>
-              {cities.map(city => (
-                <option key={city} value={city}>{city}</option>
-              ))}
-            </select>
-
-            {selectedCustomers.length > 0 && (
-              <select
-                onChange={(e) => {
-                  if (e.target.value) {
-                    handleBulkAction(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Hành động ({selectedCustomers.length})</option>
-                <option value="export">Xuất đã chọn</option>
-                <option value="activate">Kích hoạt</option>
-                <option value="deactivate">Vô hiệu hóa</option>
-                <option value="block">Khóa tài khoản</option>
-                <option value="delete">Xóa đã chọn</option>
-              </select>
-            )}
-          </div>
+          )}
         </div>
 
         {/* Customers Table */}

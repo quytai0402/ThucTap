@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import Layout from '../../src/components/Layout'
+import SearchAndFilter, { FilterConfig } from '../../src/components/SearchAndFilter'
 import { Product } from '@/types'
 import { useCart } from '../../src/context/CartContext'
 import productService from '../../src/services/productService'
@@ -14,39 +15,44 @@ export default function ProductsPage() {
   const { addItem } = useCart()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<any[]>([])
+  const [brands, setBrands] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({
-    search: '',
-    category: '',
-    brand: '',
-    minPrice: '',
-    maxPrice: '',
-    sort: 'name'
-  })
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filters, setFilters] = useState<Record<string, any>>({})
 
   useEffect(() => {
-    // Get category from URL query
-    const { category } = router.query;
-    if (category && typeof category === 'string') {
-      setFilters(prev => ({ ...prev, category }));
+    // Get initial values from URL query
+    const { category, search, brand, minPrice, maxPrice, sort } = router.query;
+    
+    const initialFilters: Record<string, any> = {};
+    if (category && typeof category === 'string') initialFilters.category = category;
+    if (brand && typeof brand === 'string') initialFilters.brand = brand;
+    if (minPrice && typeof minPrice === 'string') initialFilters.priceRange = { min: Number(minPrice) };
+    if (maxPrice && typeof maxPrice === 'string') {
+      initialFilters.priceRange = { ...initialFilters.priceRange, max: Number(maxPrice) };
     }
+    if (sort && typeof sort === 'string') initialFilters.sort = sort;
+    
+    setFilters(initialFilters);
+    setSearchTerm((search as string) || '');
   }, [router.query]);
 
   useEffect(() => {
     fetchProducts()
     fetchCategories()
-  }, [filters])
+    fetchBrands()
+  }, [searchTerm, filters])
 
   const fetchProducts = async () => {
     try {
       setLoading(true)
       
       const searchParams = {
-        search: filters.search || undefined,
+        search: searchTerm || undefined,
         category: filters.category || undefined,
         brand: filters.brand || undefined,
-        minPrice: filters.minPrice ? parseInt(filters.minPrice) : undefined,
-        maxPrice: filters.maxPrice ? parseInt(filters.maxPrice) : undefined,
+        minPrice: filters.priceRange?.min || undefined,
+        maxPrice: filters.priceRange?.max || undefined,
         sortBy: filters.sort || 'name',
         page: 1,
         limit: 20
@@ -73,9 +79,72 @@ export default function ProductsPage() {
     }
   }
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }))
+  const fetchBrands = async () => {
+    try {
+      const response = await productService.getBrands()
+      setBrands(Array.isArray(response) ? response : (response as any)?.data || [])
+    } catch (error) {
+      console.error('Error fetching brands:', error)
+      setBrands([])
+    }
   }
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term)
+  }
+
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    setFilters(newFilters)
+  }
+
+  const handleReset = () => {
+    setSearchTerm('')
+    setFilters({})
+    router.push('/products', undefined, { shallow: true })
+  }
+
+  // Configure filters
+  const filterConfigs: FilterConfig[] = [
+    {
+      key: 'category',
+      label: 'Danh mục',
+      type: 'select',
+      options: categories.map(category => ({
+        value: category._id,
+        label: category.name,
+        count: category.productCount
+      }))
+    },
+    {
+      key: 'brand',
+      label: 'Thương hiệu',
+      type: 'select',
+      options: brands.map(brand => ({
+        value: brand,
+        label: brand
+      }))
+    },
+    {
+      key: 'priceRange',
+      label: 'Khoảng giá',
+      type: 'range',
+      min: 0,
+      max: 100000000
+    },
+    {
+      key: 'sort',
+      label: 'Sắp xếp',
+      type: 'select',
+      options: [
+        { value: 'name', label: 'Tên A-Z' },
+        { value: '-name', label: 'Tên Z-A' },
+        { value: 'price', label: 'Giá thấp đến cao' },
+        { value: '-price', label: 'Giá cao đến thấp' },
+        { value: '-createdAt', label: 'Mới nhất' },
+        { value: '-rating', label: 'Đánh giá cao nhất' }
+      ]
+    }
+  ]
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -110,63 +179,17 @@ export default function ProductsPage() {
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Tất cả sản phẩm</h1>
             
-            {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-              {/* Search */}
-              <input
-                type="text"
-                placeholder="Tìm kiếm sản phẩm..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              
-              {/* Category */}
-              <select
-                value={filters.category}
-                onChange={(e) => handleFilterChange('category', e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">Tất cả danh mục</option>
-                {categories.map(category => (
-                  <option key={category._id} value={category._id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              
-              {/* Min Price */}
-              <input
-                type="number"
-                placeholder="Giá từ"
-                value={filters.minPrice}
-                onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              
-              {/* Max Price */}
-              <input
-                type="number"
-                placeholder="Giá đến"
-                value={filters.maxPrice}
-                onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              
-              {/* Sort */}
-              <select
-                value={filters.sort}
-                onChange={(e) => handleFilterChange('sort', e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="name">Tên A-Z</option>
-                <option value="-name">Tên Z-A</option>
-                <option value="price">Giá thấp đến cao</option>
-                <option value="-price">Giá cao đến thấp</option>
-                <option value="-createdAt">Mới nhất</option>
-                <option value="-rating">Đánh giá cao nhất</option>
-              </select>
-            </div>
+            {/* Search and Filter Component */}
+            <SearchAndFilter
+              searchPlaceholder="Tìm kiếm sản phẩm..."
+              filters={filterConfigs}
+              onSearch={handleSearch}
+              onFilterChange={handleFilterChange}
+              onReset={handleReset}
+              initialValues={{ search: searchTerm, ...filters }}
+              compact={true}
+              className="mb-6"
+            />
           </div>
 
           {/* Products Grid */}

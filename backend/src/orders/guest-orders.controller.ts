@@ -56,4 +56,24 @@ export class GuestOrdersController {
       trackingNumber: order.trackingNumber,
     };
   }
+
+  @Get(':orderId')
+  @ApiOperation({ summary: 'Get guest order by ID (public endpoint)' })
+  @ApiParam({ name: 'orderId', description: 'Order ID', type: String })
+  async getGuestOrderById(
+    @Param('orderId') orderId: string,
+  ) {
+    try {
+      const order = await this.ordersService.findOne(orderId);
+      
+      // Only return order if it's a guest order (for security)
+      if (!order.isGuestOrder) {
+        throw new Error('Order not found');
+      }
+
+      return order;
+    } catch (error) {
+      throw new Error('Order not found');
+    }
+  }
 }

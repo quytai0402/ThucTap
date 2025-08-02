@@ -1,20 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { 
-  ShoppingCartIcon, 
-  UserIcon, 
-  Bars3Icon, 
+import {
+  Bars3Icon,
   XMarkIcon,
-  MagnifyingGlassIcon
+  ShoppingCartIcon,
+  MagnifyingGlassIcon,
+  UserIcon,
+  HeartIcon,
+  ChevronDownIcon,
+  ArrowRightOnRectangleIcon,
+  UserCircleIcon
 } from '@heroicons/react/24/outline';
 
 const Header: React.FC = () => {
-  const { user, isAuthenticated, logout } = useAuth();
-  const { totalItems } = useCart();
+  const router = useRouter();
+  const { user, logout, isAuthenticated } = useAuth();
+  const { items } = useCart();
+  const [isOpen, setIsOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const totalItems = items.reduce((total, item) => total + item.quantity, 0);
 
   const navigation = [
     { name: 'Trang chủ', href: '/' },
@@ -28,7 +37,7 @@ const Header: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      window.location.href = `/products?search=${encodeURIComponent(searchQuery)}`;
+      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 

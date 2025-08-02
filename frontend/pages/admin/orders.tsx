@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import AdminLayout from '../../src/components/AdminLayout';
 import { ordersService } from '../../src/services/ordersService';
 import {
@@ -26,6 +27,11 @@ interface OrderItem {
   price: number;
   quantity: number;
   image: string;
+  product?: {
+    _id: string;
+    name: string;
+    slug?: string;
+  };
 }
 
 interface Order {
@@ -39,6 +45,9 @@ interface Order {
   paymentStatus: string;
   paymentMethod: string;
   shippingAddress: {
+    name?: string;
+    email?: string;
+    phone?: string;
     address: string;
     city: string;
     district: string;
@@ -85,15 +94,18 @@ const AdminOrders = () => {
       
       setOrders(ordersData.map((order: any) => ({
         id: order._id || order.id,
-        customerName: order.customer?.fullName || order.customer?.name || 'N/A',
-        customerEmail: order.customer?.email || '',
-        customerPhone: order.customer?.phone || '',
+        customerName: order.customer?.fullName || order.customer?.name || order.shippingAddress?.name || 'N/A',
+        customerEmail: order.customer?.email || order.shippingAddress?.email || '',
+        customerPhone: order.customer?.phone || order.shippingAddress?.phone || '',
         items: order.items || [],
         total: order.total || 0,
         status: order.status || 'pending',
         paymentStatus: order.paymentStatus || 'pending',
         paymentMethod: order.paymentMethod || '',
         shippingAddress: order.shippingAddress || {
+          name: '',
+          email: '',
+          phone: '',
           address: '',
           city: '',
           district: ''
@@ -546,7 +558,17 @@ const AdminOrders = () => {
                         {order.items.length} sản phẩm
                         {order.items.length > 0 && (
                           <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                            {order.items[0].name}
+                            {order.items[0].product?._id ? (
+                              <Link 
+                                href={`/products/${order.items[0].product.slug || order.items[0].product._id}`}
+                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+                                target="_blank"
+                              >
+                                {order.items[0].name}
+                              </Link>
+                            ) : (
+                              order.items[0].name
+                            )}
                             {order.items.length > 1 && ` +${order.items.length - 1} khác`}
                           </div>
                         )}
@@ -702,9 +724,9 @@ const AdminOrders = () => {
                           <div className="space-y-4">
                             <h4 className="font-medium text-gray-900 dark:text-white">Thông tin khách hàng</h4>
                             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-2">
-                              <p><span className="font-medium">Tên:</span> {order.customerName}</p>
-                              <p><span className="font-medium">Email:</span> {order.customerEmail}</p>
-                              <p><span className="font-medium">Điện thoại:</span> {order.customerPhone}</p>
+                              <p><span className="font-medium">Tên:</span> {order.customerName || order.shippingAddress.name || 'N/A'}</p>
+                              <p><span className="font-medium">Email:</span> {order.customerEmail || order.shippingAddress.email || 'N/A'}</p>
+                              <p><span className="font-medium">Điện thoại:</span> {order.customerPhone || order.shippingAddress.phone || 'N/A'}</p>
                               <p><span className="font-medium">Địa chỉ:</span> {order.shippingAddress.address}, {order.shippingAddress.district}, {order.shippingAddress.city}</p>
                             </div>
                           </div>
@@ -757,7 +779,17 @@ const AdminOrders = () => {
                                 {order.items.map((item) => (
                                   <tr key={item.id}>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</div>
+                                      {item.product?._id ? (
+                                        <Link 
+                                          href={`/products/${item.product.slug || item.product._id}`}
+                                          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+                                          target="_blank"
+                                        >
+                                          {item.name}
+                                        </Link>
+                                      ) : (
+                                        <div className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</div>
+                                      )}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                       {formatCurrency(item.price)}

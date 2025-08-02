@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../src/components/AdminLayout';
 import ProductForm from '../../src/components/ProductForm';
+import SearchAndFilter, { FilterConfig } from '../../src/components/SearchAndFilter';
 import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
   EyeIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
   XCircleIcon,
@@ -57,16 +56,15 @@ interface CreateProductData {
 }
 
 const AdminProducts = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedBrand, setSelectedBrand] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState<Record<string, any>>({});
   
   // Dynamic data from API
   const [categories, setCategories] = useState<any[]>([]);
@@ -218,38 +216,71 @@ const AdminProducts = () => {
                         (typeof product.category === 'string' ? product.category : product.category?.name) || '';
     
     // Search matching
-    const matchesSearch = !searchQuery || (
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      categoryName.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = !searchTerm || (
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      categoryName.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
     // Category filtering - exact match with category name
-    const matchesCategory = !selectedCategory || categoryName === selectedCategory;
+    const matchesCategory = !filters.category || categoryName === filters.category;
     
     // Brand filtering - exact match with brand name
-    const matchesBrand = !selectedBrand || product.brand === selectedBrand;
+    const matchesBrand = !filters.brand || product.brand === filters.brand;
     
     // Status filtering - exact match with status
-    const matchesStatus = !selectedStatus || product.status === selectedStatus;
-    
-    // Uncomment for debugging filters
-    // console.log('Filtering product:', {
-    //   name: product.name,
-    //   categoryName,
-    //   selectedCategory,
-    //   matchesCategory,
-    //   brand: product.brand,
-    //   selectedBrand,
-    //   matchesBrand,
-    //   status: product.status,
-    //   selectedStatus,
-    //   matchesStatus,
-    //   finalMatch: matchesSearch && matchesCategory && matchesBrand && matchesStatus
-    // });
+    const matchesStatus = !filters.status || product.status === filters.status;
     
     return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
   });
+
+  // Handle search
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+  };
+
+  // Handle filter change
+  const handleFilterChange = (newFilters: Record<string, any>) => {
+    setFilters(newFilters);
+  };
+
+  // Handle reset
+  const handleReset = () => {
+    setSearchTerm('');
+    setFilters({});
+  };
+
+  // Configure filters for admin products
+  const filterConfigs: FilterConfig[] = [
+    {
+      key: 'category',
+      label: 'Danh mục',
+      type: 'select',
+      options: categories.map(category => ({
+        value: category.name,
+        label: category.name
+      }))
+    },
+    {
+      key: 'brand',
+      label: 'Thương hiệu',
+      type: 'select',
+      options: brands.map((brand: string) => ({
+        value: brand,
+        label: brand
+      }))
+    },
+    {
+      key: 'status',
+      label: 'Trạng thái',
+      type: 'select',
+      options: [
+        { value: 'active', label: 'Hoạt động' },
+        { value: 'inactive', label: 'Tạm dừng' },
+        { value: 'out_of_stock', label: 'Hết hàng' }
+      ]
+    }
+  ];
 
   // Pagination
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -385,58 +416,18 @@ const AdminProducts = () => {
           </div>
         </div>
 
-        {/* Enhanced Filters with better layout and visual design */}
-        <div className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-8">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm sản phẩm..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-              >
-                <option value="">Tất cả danh mục</option>
-                {categories.map(category => (
-                  <option key={category._id} value={category.name}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-              >
-                <option value="">Tất cả thương hiệu</option>
-                {brands.map((brand, index) => (
-                  <option key={index} value={brand}>
-                    {brand}
-                  </option>
-                ))}
-              </select>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-              >
-                <option value="">Tất cả trạng thái</option>
-                <option value="active">Hoạt động</option>
-                <option value="inactive">Tạm dừng</option>
-                <option value="out_of_stock">Hết hàng</option>
-              </select>
-            </div>
-          </div>
+        {/* Enhanced Search and Filter */}
+        <div className="mb-8">
+          <SearchAndFilter
+            searchPlaceholder="Tìm kiếm sản phẩm theo tên, thương hiệu..."
+            filters={filterConfigs}
+            onSearch={handleSearch}
+            onFilterChange={handleFilterChange}
+            onReset={handleReset}
+            initialValues={{ search: searchTerm, ...filters }}
+            compact={true}
+            className="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700"
+          />
         </div>
 
         {/* Card-based Product List */}
