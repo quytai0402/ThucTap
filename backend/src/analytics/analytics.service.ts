@@ -142,7 +142,7 @@ export class AnalyticsService {
       {
         $group: {
           _id: { $dateToString: { format: groupFormat, date: '$createdAt' } },
-          revenue: { $sum: '$totalAmount' },
+          revenue: { $sum: '$total' }, // Fixed: use $total instead of $totalAmount
         },
       },
       { $sort: { '_id': 1 } },

@@ -64,8 +64,16 @@ export class ProductsService {
   async create(createProductDto: CreateProductDto): Promise<Product> {
     console.log('🚀 Creating product with data:', createProductDto);
     
-    // Find category by name
-    const category = await this.categoryModel.findOne({ name: createProductDto.category });
+    // Find category by ID or name
+    let category;
+    if (Types.ObjectId.isValid(createProductDto.category)) {
+      // If it's a valid ObjectId, search by _id
+      category = await this.categoryModel.findById(createProductDto.category);
+    } else {
+      // Otherwise, search by name
+      category = await this.categoryModel.findOne({ name: createProductDto.category });
+    }
+    
     if (!category) {
       throw new NotFoundException(`Category "${createProductDto.category}" not found`);
     }
@@ -126,17 +134,31 @@ export class ProductsService {
 
     // Apply filters
     if (filter.category) {
-      // Try to find category by name first, if it's a string
+      // Handle category filter
       if (typeof filter.category === 'string') {
-        const category = await this.categoryModel.findOne({ name: filter.category });
-        if (category) {
-          query.category = category._id;
-        } else if (Types.ObjectId.isValid(filter.category)) {
+        if (Types.ObjectId.isValid(filter.category)) {
           // If it's a valid ObjectId string, use it directly
-          query.category = filter.category;
+          query.category = new Types.ObjectId(filter.category);
         } else {
-          // If category not found and not a valid ObjectId, skip filtering
-          console.warn(`Invalid category filter: ${filter.category}`);
+          // Try to find category by name or slug
+          const category = await this.categoryModel.findOne({ 
+            $or: [
+              { name: filter.category },
+              { slug: filter.category }
+            ]
+          });
+          if (category) {
+            query.category = category._id;
+          } else {
+            // If category not found, return empty result
+            console.warn(`Category not found: ${filter.category}`);
+            return {
+              products: [],
+              total: 0,
+              totalPages: 0,
+              currentPage: page,
+            };
+          }
         }
       } else {
         query.category = filter.category;

@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ReviewsService, CreateReviewDto, UpdateReviewDto } from './reviews.service';
+import { CreateReviewRequestDto } from './dto/create-review.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('reviews')
@@ -23,11 +24,12 @@ export class ReviewsController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create a new review' })
   @ApiBearerAuth()
-  create(@Body() createReviewDto: CreateReviewDto, @Request() req) {
-    return this.reviewsService.create({
-      ...createReviewDto,
-      customer: req.user.userId,
-    });
+  create(@Body() createReviewRequestDto: CreateReviewRequestDto, @Request() req) {
+    const createReviewDto: CreateReviewDto = {
+      ...createReviewRequestDto,
+      customer: req.user.sub,
+    };
+    return this.reviewsService.create(createReviewDto);
   }
 
   @Get()

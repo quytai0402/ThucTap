@@ -346,7 +346,16 @@ export class OrdersService {
         $group: {
           _id: null,
           totalOrders: { $sum: 1 },
-          totalRevenue: { $sum: '$total' },
+          // Only count revenue from delivered orders (successfully completed)
+          totalRevenue: { 
+            $sum: { 
+              $cond: [
+                { $eq: ['$status', OrderStatus.DELIVERED] }, 
+                '$total', 
+                0 
+              ] 
+            } 
+          },
           averageOrderValue: { $avg: '$total' },
           pendingOrders: {
             $sum: { $cond: [{ $eq: ['$status', OrderStatus.PENDING] }, 1, 0] }
@@ -461,10 +470,21 @@ export class OrdersService {
 
   private async restoreProductStock(items: Array<{ product: any; quantity: number }>) {
     for (const item of items) {
-      await this.productModel.findByIdAndUpdate(
-        item.product._id || item.product,
-        { $inc: { stock: item.quantity, sold: -item.quantity } }
-      );
+      // Safely get product ID - handle both populated and non-populated cases
+      const productId = item.product?._id || item.product;
+      
+      if (productId) {
+        try {
+          await this.productModel.findByIdAndUpdate(
+            productId,
+            { $inc: { stock: item.quantity, sold: -item.quantity } }
+          );
+        } catch (error) {
+          console.error(`Error restoring stock for product ${productId}:`, error);
+        }
+      } else {
+        console.warn('Product ID not found in order item:', item);
+      }
     }
   }
 
