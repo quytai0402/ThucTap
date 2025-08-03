@@ -78,10 +78,10 @@ const AdminSettings: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('general')
   const [systemSettings, setSystemSettings] = useState<SystemSettings>({
-    siteName: 'Laptop Store Vietnam',
-    siteDescription: 'Cửa hàng laptop uy tín với đa dạng thương hiệu và giá cả phù hợp',
+    siteName: 'Laptop IT-Global',
+    siteDescription: 'Công Ty TNHH IT-Global - Chuyên cung cấp laptop và thiết bị công nghệ',
     siteUrl: 'https://laptopstore.vn',
-    adminEmail: 'admin@laptopstore.vn',
+    adminEmail: 'admin@it-global.net',
     currency: 'VND',
     timezone: 'Asia/Ho_Chi_Minh',
     language: 'vi',

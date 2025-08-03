@@ -322,7 +322,7 @@ const AdminAnalytics = () => {
               Theo dõi hiệu suất kinh doanh và xu hướng thị trường
             </p>
           </div>
-          <div className="mt-4 sm:mt-0 flex space-x-3">
+          <div className="mt-4 sm:mt-0">
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}

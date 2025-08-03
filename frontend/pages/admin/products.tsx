@@ -254,7 +254,7 @@ const AdminProducts = () => {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Quản lý sản phẩm</h1>
             <p className="text-gray-600 dark:text-gray-400">Quản lý danh sách sản phẩm của cửa hàng</p>
           </div>
-          <div className="mt-4 sm:mt-0 flex space-x-3">
+          <div className="mt-4 sm:mt-0">
             {selectedProducts.length > 0 && (
               <button
                 onClick={handleBulkDelete}
