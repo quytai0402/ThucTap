@@ -167,6 +167,36 @@ const ProfilePage: React.FC = () => {
     }
   }, [user, activeTab])
 
+  // Auto-populate dropdowns when editing address
+  useEffect(() => {
+    if (editingAddress && provinces.length > 0) {
+      const province = provinces.find(p => p.name === editingAddress.city)
+      if (province && selectedProvince !== province.code) {
+        setSelectedProvince(province.code)
+        fetchDistricts(province.code)
+      }
+    }
+  }, [editingAddress, provinces])
+
+  useEffect(() => {
+    if (editingAddress && districts.length > 0) {
+      const district = districts.find(d => d.name === editingAddress.district)
+      if (district && selectedDistrict !== district.code) {
+        setSelectedDistrict(district.code)
+        fetchWards(district.code)
+      }
+    }
+  }, [editingAddress, districts])
+
+  useEffect(() => {
+    if (editingAddress && wards.length > 0) {
+      const ward = wards.find(w => w.name === editingAddress.ward)
+      if (ward && selectedWard !== ward.code) {
+        setSelectedWard(ward.code)
+      }
+    }
+  }, [editingAddress, wards])
+
   const fetchCustomerStats = async () => {
     try {
       const response = await api.get('/orders/customer-stats')
@@ -231,6 +261,15 @@ const ProfilePage: React.FC = () => {
 
   const saveAddress = async () => {
     try {
+      console.log('🔍 Profile saving address:', newAddress)
+      
+      // Validate required fields
+      if (!newAddress.name.trim() || !newAddress.phone.trim() || !newAddress.street.trim() || 
+          !newAddress.city.trim() || !newAddress.district.trim() || !newAddress.ward.trim()) {
+        alert('Vui lòng điền đầy đủ thông tin địa chỉ')
+        return
+      }
+      
       if (editingAddress) {
         await api.patch(`/addresses/${editingAddress._id}`, newAddress)
       } else {
@@ -242,6 +281,7 @@ const ProfilePage: React.FC = () => {
       resetAddressForm()
     } catch (error) {
       console.error('Error saving address:', error)
+      alert('Có lỗi xảy ra khi lưu địa chỉ')
     }
   }
 
@@ -346,6 +386,9 @@ const ProfilePage: React.FC = () => {
   }
 
   const openAddressModal = (address?: Address) => {
+    setShowAddressModal(true)
+    fetchProvinces()
+    
     if (address) {
       setEditingAddress(address)
       setNewAddress(address)
@@ -353,8 +396,6 @@ const ProfilePage: React.FC = () => {
       setEditingAddress(null)
       resetAddressForm()
     }
-    setShowAddressModal(true)
-    fetchProvinces()
   }
 
   // Payment Methods functions
@@ -1145,7 +1186,21 @@ const ProfilePage: React.FC = () => {
                 </button>
                 <button
                   onClick={saveAddress}
-                  disabled={!newAddress.name || !newAddress.phone || !newAddress.street}
+                  disabled={(() => {
+                    const isDisabled = !newAddress.name.trim() || !newAddress.phone.trim() || !newAddress.street.trim() || 
+                                     !newAddress.city.trim() || !newAddress.district.trim() || !newAddress.ward.trim()
+                    console.log('🔍 Profile button validation:', {
+                      name: !!newAddress.name.trim(),
+                      phone: !!newAddress.phone.trim(), 
+                      street: !!newAddress.street.trim(),
+                      city: !!newAddress.city.trim(),
+                      district: !!newAddress.district.trim(),
+                      ward: !!newAddress.ward.trim(),
+                      isDisabled,
+                      newAddress
+                    })
+                    return isDisabled
+                  })()}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingAddress ? 'Cập nhật' : 'Lưu địa chỉ'}

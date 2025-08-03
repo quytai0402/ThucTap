@@ -85,6 +85,33 @@ const SmartAddressSelector: React.FC<SmartAddressSelectorProps> = ({
     }
   }, [user])
 
+  // Debug newAddress changes
+  useEffect(() => {
+    console.log('🔄 Address state changed:', newAddress)
+  }, [newAddress])
+
+  // Sync selected values with newAddress when selections change
+  useEffect(() => {
+    if (selectedProvince && selectedDistrict && selectedWard) {
+      const province = provinces.find(p => p.code === selectedProvince)
+      const district = districts.find(d => d.code === selectedDistrict)
+      const ward = wards.find(w => w.code === selectedWard)
+      
+      console.log('🔄 Syncing selections:', { 
+        province: province?.name, 
+        district: district?.name, 
+        ward: ward?.name 
+      })
+      
+      setNewAddress(prev => ({
+        ...prev,
+        city: province?.name || prev.city,
+        district: district?.name || prev.district,
+        ward: ward?.name || prev.ward
+      }))
+    }
+  }, [selectedProvince, selectedDistrict, selectedWard, provinces, districts, wards])
+
   // Address to replace when user has max addresses
   const [addressToReplace, setAddressToReplace] = useState<string | null>(null)
 
@@ -155,10 +182,15 @@ const SmartAddressSelector: React.FC<SmartAddressSelectorProps> = ({
   const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const provinceCode = e.target.value
     const province = provinces.find(p => p.code === provinceCode)
+    console.log('🌆 Province change:', { provinceCode, province, provinceName: province?.name })
     setSelectedProvince(provinceCode)
     setSelectedDistrict('')
     setSelectedWard('')
-    setNewAddress(prev => ({ ...prev, city: province?.name || '', district: '', ward: '' }))
+    setNewAddress(prev => {
+      const updated = { ...prev, city: province?.name || '', district: '', ward: '' }
+      console.log('🌆 Updated address with province:', updated)
+      return updated
+    })
     if (provinceCode) {
       fetchDistricts(provinceCode)
     } else {
@@ -170,9 +202,14 @@ const SmartAddressSelector: React.FC<SmartAddressSelectorProps> = ({
   const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const districtCode = e.target.value
     const district = districts.find(d => d.code === districtCode)
+    console.log('🏙️ District change:', { districtCode, district, districtName: district?.name })
     setSelectedDistrict(districtCode)
     setSelectedWard('')
-    setNewAddress(prev => ({ ...prev, district: district?.name || '', ward: '' }))
+    setNewAddress(prev => {
+      const updated = { ...prev, district: district?.name || '', ward: '' }
+      console.log('🏙️ Updated address with district:', updated)
+      return updated
+    })
     if (districtCode) {
       fetchWards(districtCode)
     } else {
@@ -183,8 +220,13 @@ const SmartAddressSelector: React.FC<SmartAddressSelectorProps> = ({
   const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const wardCode = e.target.value
     const ward = wards.find(w => w.code === wardCode)
+    console.log('🏠 Ward change:', { wardCode, ward, wardName: ward?.name })
     setSelectedWard(wardCode)
-    setNewAddress(prev => ({ ...prev, ward: ward?.name || '' }))
+    setNewAddress(prev => {
+      const updated = { ...prev, ward: ward?.name || '' }
+      console.log('🏠 Updated address with ward:', updated)
+      return updated
+    })
   }
 
   const handleSaveNewAddress = async () => {
@@ -440,8 +482,21 @@ const SmartAddressSelector: React.FC<SmartAddressSelectorProps> = ({
         )}
         <button
           onClick={handleSaveNewAddress}
-          disabled={!isAddressValid() || loading}
-          className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
+          disabled={(() => {
+            const disabled = !isAddressValid() || loading
+            if (disabled) {
+              console.log('🚫 Button disabled:', { 
+                isAddressValid: isAddressValid(), 
+                loading,
+                selectedProvince,
+                selectedDistrict, 
+                selectedWard,
+                newAddress 
+              })
+            }
+            return disabled
+          })()}
+          className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
         >
           {loading ? 'Đang lưu...' : userId ? 'Lưu địa chỉ' : 'Sử dụng địa chỉ này'}
         </button>
