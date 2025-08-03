@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import Head from 'next/head'
 import Layout from '../src/components/Layout'
+import RelatedLinks from '../src/components/RelatedLinks'
 import { 
   MapPinIcon, 
   PhoneIcon, 
@@ -78,7 +79,15 @@ const Contact: React.FC = () => {
         'Chủ nhật: 9:00 - 18:00'
       ]
     }
-  ]
+  ];
+
+  const relatedLinks = [
+    { title: 'Về chúng tôi', href: '/about', description: 'Tìm hiểu thêm về IT-Global', icon: '🏢' },
+    { title: 'Hỗ trợ khách hàng', href: '/support', description: 'Trung tâm hỗ trợ 24/7', icon: '🎧' },
+    { title: 'FAQ', href: '/faq', description: 'Câu hỏi thường gặp', icon: '❓' },
+    { title: 'Chính sách bảo hành', href: '/warranty', description: 'Thông tin bảo hành chi tiết', icon: '🛡️' },
+    { title: 'Chính sách đổi trả', href: '/return', description: 'Quy định đổi trả sản phẩm', icon: '↩️' },
+  ];
 
   const stores = [
     {
@@ -105,10 +114,13 @@ const Contact: React.FC = () => {
     <>
       <Head>
         <title>Liên hệ - IT-Global</title>
-        <meta name="description" content="Liên hệ với LaptopStore để được tư vấn và hỗ trợ" />
+        <meta name="description" content="Liên hệ với IT-Global để được tư vấn và hỗ trợ" />
       </Head>
 
-      <Layout>
+      <Layout 
+        showBreadcrumb={true}
+        breadcrumbs={[{ label: 'Liên hệ' }]}
+      >
        {/* Hero Section */}
         <section className="relative bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-600 text-white py-28 overflow-hidden">
           <div className="absolute inset-0 opacity-20 bg-[url('/images/pattern.svg')] bg-cover bg-center pointer-events-none"></div>
@@ -364,6 +376,14 @@ const Contact: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Related Links */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <RelatedLinks 
+            title="Trang hữu ích khác" 
+            links={relatedLinks}
+          />
         </div>
       </Layout>
     </>

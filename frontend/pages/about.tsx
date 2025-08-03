@@ -1,6 +1,7 @@
 import React from 'react'
 import Head from 'next/head'
 import Layout from '../src/components/Layout'
+import RelatedLinks from '../src/components/RelatedLinks'
 import {
   ShieldCheckIcon,
   TruckIcon,
@@ -50,16 +51,27 @@ const About: React.FC = () => {
     { number: '50K+', label: 'Khách hàng tin tưởng' },
     { number: '100+', label: 'Sản phẩm đa dạng' },
     { number: '24/7', label: 'Hỗ trợ khách hàng' }
-  ]
+  ];
+
+  const relatedLinks = [
+    { title: 'Liên hệ với chúng tôi', href: '/contact', description: 'Thông tin liên hệ và địa chỉ', icon: '📞' },
+    { title: 'Sản phẩm của chúng tôi', href: '/products', description: 'Xem tất cả sản phẩm laptop', icon: '💻' },
+    { title: 'Chính sách bảo hành', href: '/warranty', description: 'Thông tin chi tiết về bảo hành', icon: '🛡️' },
+    { title: 'Hỗ trợ khách hàng', href: '/support', description: 'Trung tâm hỗ trợ 24/7', icon: '🎧' },
+    { title: 'Tin tức và sự kiện', href: '/news', description: 'Cập nhật tin tức mới nhất', icon: '📰' },
+  ];
 
   return (
     <>
       <Head>
-        <title>Về chúng tôi - LaptopStore</title>
-        <meta name="description" content="Tìm hiểu về LaptopStore - cửa hàng laptop uy tín hàng đầu Việt Nam" />
+        <title>Về chúng tôi - IT-Global</title>
+        <meta name="description" content="Tìm hiểu về IT-Global - cửa hàng laptop uy tín hàng đầu Việt Nam" />
       </Head>
 
-      <Layout>
+      <Layout 
+        showBreadcrumb={true}
+        breadcrumbs={[{ label: 'Về chúng tôi' }]}
+      >
         {/* Hero Section */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -231,6 +243,14 @@ const About: React.FC = () => {
               </a>
             </div>
           </div>
+        </div>
+
+        {/* Related Links */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <RelatedLinks 
+            title="Trang liên quan" 
+            links={relatedLinks}
+          />
         </div>
       </Layout>
     </>

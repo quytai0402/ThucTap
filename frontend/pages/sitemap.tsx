@@ -26,7 +26,7 @@ const Sitemap: React.FC = () => {
       title: 'Trang chủ',
       icon: HomeIcon,
       links: [
-        { name: 'Trang chủ', url: '/', description: 'Trang chủ LaptopStore' }
+        { name: 'Trang chủ', url: '/', description: 'Trang chủ IT-Global' }
       ]
     },
     {
@@ -35,18 +35,24 @@ const Sitemap: React.FC = () => {
       links: [
         { name: 'Tất cả sản phẩm', url: '/products', description: 'Danh sách tất cả laptop' },
         { name: 'Danh mục sản phẩm', url: '/categories', description: 'Phân loại theo thương hiệu' },
-        { name: 'Ưu đãi đặc biệt', url: '/deals', description: 'Các chương trình khuyến mãi' }
+        { name: 'Giỏ hàng', url: '/cart', description: 'Quản lý giỏ hàng' },
+        { name: 'Thanh toán', url: '/checkout', description: 'Tiến hành thanh toán' },
+        { name: 'Xử lý thanh toán', url: '/payment', description: 'Trang xử lý thanh toán' },
+        { name: 'Kết quả thanh toán', url: '/payment-return', description: 'Kết quả giao dịch' }
       ]
     },
     {
       title: 'Tài khoản người dùng',
       icon: UserIcon,
       links: [
-        { name: 'Đăng nhập', url: '/auth/login', description: 'Đăng nhập tài khoản' },
-        { name: 'Đăng ký', url: '/auth/register', description: 'Tạo tài khoản mới' },
+        { name: 'Đăng nhập', url: '/login', description: 'Đăng nhập tài khoản' },
+        { name: 'Đăng ký', url: '/register', description: 'Tạo tài khoản mới' },
         { name: 'Quên mật khẩu', url: '/forgot-password', description: 'Khôi phục mật khẩu' },
+        { name: 'Đặt lại mật khẩu', url: '/reset-password', description: 'Đặt lại mật khẩu mới' },
         { name: 'Hồ sơ cá nhân', url: '/profile', description: 'Quản lý thông tin cá nhân' },
-        { name: 'Đơn hàng của tôi', url: '/profile/orders', description: 'Theo dõi đơn hàng' }
+        { name: 'Đơn hàng của tôi', url: '/profile/orders', description: 'Theo dõi đơn hàng' },
+        { name: 'Đơn hàng', url: '/orders', description: 'Danh sách đơn hàng' },
+        { name: 'Thành công', url: '/order-success', description: 'Đặt hàng thành công' }
       ]
     },
     {

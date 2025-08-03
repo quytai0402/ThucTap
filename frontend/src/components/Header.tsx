@@ -34,6 +34,15 @@ const Header: React.FC = () => {
     { name: 'Hỗ trợ', href: '/support' },
   ];
 
+  const additionalPages = [
+    { name: 'Về chúng tôi', href: '/about' },
+    { name: 'FAQ', href: '/faq' },
+    { name: 'Thanh toán', href: '/payment' },
+    { name: 'Đơn hàng', href: '/orders' },
+    { name: 'Sơ đồ trang', href: '/sitemap' },
+    { name: 'Tất cả trang', href: '/all-pages' },
+  ];
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -68,6 +77,25 @@ const Header: React.FC = () => {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Dropdown menu "Khác" */}
+            <div className="relative group">
+              <button className="flex items-center text-gray-700 hover:text-blue-600 px-3 py-2 text-sm font-medium transition-colors duration-200">
+                Khác
+                <ChevronDownIcon className="ml-1 h-4 w-4" />
+              </button>
+              <div className="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                {additionalPages.map((page) => (
+                  <Link
+                    key={page.name}
+                    href={page.href}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  >
+                    {page.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </nav>
 
           {/* Search Bar */}
@@ -188,6 +216,23 @@ const Header: React.FC = () => {
                   {item.name}
                 </Link>
               ))}
+
+              {/* Additional pages in mobile */}
+              <div className="pt-2 border-t border-gray-200">
+                <p className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Trang khác
+                </p>
+                {additionalPages.map((page) => (
+                  <Link
+                    key={page.name}
+                    href={page.href}
+                    className="text-gray-700 hover:text-blue-600 block px-3 py-2 text-base font-medium"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {page.name}
+                  </Link>
+                ))}
+              </div>
 
               {/* Mobile auth */}
               {!isAuthenticated && (

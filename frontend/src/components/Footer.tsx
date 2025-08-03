@@ -22,18 +22,21 @@ const Footer: React.FC = () => {
       { name: 'Giao hàng', href: '/shipping' },
       { name: 'Đổi trả', href: '/return' },
       { name: 'Hỗ trợ', href: '/support' },
+      { name: 'Thanh toán', href: '/payment' },
     ],
     company: [
       { name: 'Về chúng tôi', href: '/about' },
       { name: 'Tin tức', href: '/news' },
       { name: 'Liên hệ', href: '/contact' },
-      { name: 'Tuyển dụng', href: '/careers' },
+      { name: 'Đơn hàng', href: '/orders' },
+      { name: 'Theo dõi đơn hàng', href: '/order-success' },
     ],
     support: [
       { name: 'FAQ', href: '/faq' },
       { name: 'Hướng dẫn mua hàng', href: '/guide' },
       { name: 'Chính sách bảo mật', href: '/privacy' },
       { name: 'Điều khoản sử dụng', href: '/terms' },
+      { name: 'Sơ đồ trang', href: '/sitemap' },
     ],
   };
 
@@ -182,6 +185,9 @@ const Footer: React.FC = () => {
               </Link>
               <Link href="/sitemap" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
                 Sitemap
+              </Link>
+              <Link href="/all-pages" className="text-gray-400 hover:text-white text-sm transition-colors duration-200">
+                Tất cả trang
               </Link>
             </div>
           </div>

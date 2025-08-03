@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Layout from '../../src/components/Layout'
 import ProductCard from '../../src/components/ProductCard'
 import SearchAndFilter, { FilterConfig } from '../../src/components/SearchAndFilter'
+import RelatedLinks from '../../src/components/RelatedLinks'
+import SearchHelp from '../../src/components/SearchHelp'
 import { Product } from '@/types'
 import productService from '../../src/services/productService'
 import categoriesService from '../../src/services/categoriesService'
@@ -152,14 +154,27 @@ export default function ProductsPage() {
     }).format(price)
   }
 
+  const relatedLinks = [
+    { title: 'Danh mục sản phẩm', href: '/categories', description: 'Xem tất cả danh mục', icon: '📂' },
+    { title: 'Giỏ hàng', href: '/cart', description: 'Xem giỏ hàng hiện tại', icon: '🛒' },
+    { title: 'So sánh sản phẩm', href: '/compare', description: 'So sánh các sản phẩm', icon: '⚖️' },
+    { title: 'Hỗ trợ mua hàng', href: '/support', description: 'Tư vấn chọn laptop phù hợp', icon: '💬' },
+  ];
+
   return (
     <>
       <Head>
-        <title>Sản phẩm - IT-Global</title>
-        <meta name="description" content="Khám phá bộ sưu tập laptop đa dạng với giá tốt nhất" />
+        <title>{`Sản phẩm${searchTerm ? ` - ${searchTerm}` : ''} | IT-Global`}</title>
+        <meta name="description" content="Khám phá bộ sưu tập laptop đa dạng từ các thương hiệu hàng đầu. Giá tốt nhất, bảo hành chính hãng." />
       </Head>
 
-      <Layout>
+      <Layout 
+        showBreadcrumb={true}
+        breadcrumbs={[
+          { label: 'Sản phẩm', href: '/products' },
+          ...(searchTerm ? [{ label: `Kết quả: "${searchTerm}"` }] : [])
+        ]}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
           <div className="mb-8">
@@ -185,9 +200,12 @@ export default function ProductsPage() {
               <p className="mt-4 text-gray-600">Đang tải sản phẩm...</p>
             </div>
           ) : products.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">Không tìm thấy sản phẩm nào</p>
-            </div>
+            <>
+              <div className="text-center py-12">
+                <p className="text-gray-500 text-lg">Không tìm thấy sản phẩm nào</p>
+              </div>
+              <SearchHelp searchTerm={searchTerm} resultCount={products.length} />
+            </>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {products.map((product) => {
@@ -216,6 +234,11 @@ export default function ProductsPage() {
               })}
             </div>
           )}
+
+          {/* Related Links */}
+          <div className="mt-12">
+            <RelatedLinks links={relatedLinks} />
+          </div>
         </div>
       </Layout>
     </>

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import Layout from '../src/components/Layout'
+import RelatedLinks from '../src/components/RelatedLinks'
 import { useCart } from '../src/context/CartContext'
 import { useAuth } from '../src/context/AuthContext'
 import { 
@@ -70,9 +71,19 @@ export default function CartPage() {
     router.push('/checkout')
   }
 
+  const relatedLinks = [
+    { title: 'Tiếp tục mua sắm', href: '/products', description: 'Xem thêm sản phẩm khác', icon: '🛍️' },
+    { title: 'Chính sách giao hàng', href: '/shipping', description: 'Thông tin về giao hàng', icon: '🚚' },
+    { title: 'Phương thức thanh toán', href: '/payment', description: 'Các hình thức thanh toán', icon: '💳' },
+    { title: 'Hỗ trợ khách hàng', href: '/support', description: 'Liên hệ hỗ trợ', icon: '🎧' },
+  ];
+
   if (items.length === 0) {
     return (
-      <Layout>
+      <Layout 
+        showBreadcrumb={true}
+        breadcrumbs={[{ label: 'Giỏ hàng' }]}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
             <ShoppingBagIcon className="mx-auto h-16 w-16 text-gray-400" />
@@ -90,13 +101,24 @@ export default function CartPage() {
               </Link>
             </div>
           </div>
+
+          {/* Related Links for empty cart */}
+          <div className="mt-16">
+            <RelatedLinks 
+              title="Có thể bạn quan tâm" 
+              links={relatedLinks}
+            />
+          </div>
         </div>
       </Layout>
     )
   }
 
   return (
-    <Layout>
+    <Layout 
+      showBreadcrumb={true}
+      breadcrumbs={[{ label: 'Giỏ hàng' }]}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Giỏ hàng của bạn</h1>
@@ -329,6 +351,14 @@ export default function CartPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Related Links */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <RelatedLinks 
+            title="Có thể bạn quan tâm" 
+            links={relatedLinks}
+          />
         </div>
       </div>
     </Layout>

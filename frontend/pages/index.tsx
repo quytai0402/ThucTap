@@ -99,6 +99,41 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Quick Links Section */}
+        <section className="py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Liên kết nhanh
+              </h2>
+              <p className="text-lg text-gray-600">
+                Truy cập nhanh các trang thông tin quan trọng
+              </p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+              {[
+                { name: 'Về chúng tôi', href: '/about', icon: '🏢' },
+                { name: 'FAQ', href: '/faq', icon: '❓' },
+                { name: 'Bảo hành', href: '/warranty', icon: '🛡️' },
+                { name: 'Giao hàng', href: '/shipping', icon: '🚚' },
+                { name: 'Đổi trả', href: '/return', icon: '↩️' },
+                { name: 'Điều khoản', href: '/terms', icon: '📋' },
+              ].map((link) => (
+                <a
+                  key={link.name}
+                  href={link.href}
+                  className="group bg-gray-50 hover:bg-blue-50 rounded-xl p-6 text-center transition-all duration-200 hover:shadow-md"
+                >
+                  <div className="text-3xl mb-3">{link.icon}</div>
+                  <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">
+                    {link.name}
+                  </h3>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Newsletter Section */}
         <section className="py-16 bg-gray-900 text-white">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
