@@ -373,10 +373,14 @@ const AdminCustomers = () => {
     registeredCustomers: customers.filter(c => !c.isGuest).length,
     // Tính doanh thu từ khách hàng đã có đơn hàng hoàn thành với validation
     totalRevenue: (() => {
-      const revenue = customers.reduce((sum, customer) => {
+      console.log('=== DEBUG: Calculating totalRevenue ===');
+      const revenue = customers.reduce((sum, customer, index) => {
         // Đảm bảo customerSpent là number, không phải string
         let customerSpent = customer.totalSpent || 0;
+        console.log(`Customer ${index + 1}: totalSpent = ${customerSpent} (type: ${typeof customerSpent})`);
+        
         if (typeof customerSpent === 'string') {
+          console.log(`Converting string to number: ${customerSpent}`);
           customerSpent = parseFloat(customerSpent) || 0;
         }
         // Kiểm tra số tiền không thực tế (quá 1 tỷ VNĐ)
@@ -384,8 +388,10 @@ const AdminCustomers = () => {
           console.warn(`Customer ${customer.name} has unrealistic totalSpent: ${customerSpent}`);
           return sum; // Bỏ qua customer này
         }
+        console.log(`Adding ${customerSpent} to sum ${sum} = ${sum + customerSpent}`);
         return sum + customerSpent;
       }, 0);
+      console.log(`Final totalRevenue: ${revenue}`);
       return revenue;
     })(),
     // Tính giá trị trung bình đơn hàng với validation
