@@ -103,7 +103,10 @@ export class OrdersService {
       paymentMethod: createOrderDto.paymentMethod,
       notes: createOrderDto.notes,
       status: OrderStatus.PENDING,
-      paymentStatus: PaymentStatus.PENDING,
+      // Set payment status based on payment method
+      paymentStatus: createOrderDto.paymentMethod === PaymentMethod.COD 
+        ? PaymentStatus.PENDING 
+        : PaymentStatus.PAID,
       isGuestOrder: createOrderDto.isGuestOrder || false,
     };
     
@@ -338,8 +341,14 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
     
+    // Auto update payment status based on payment method and order status
     if (status === OrderStatus.DELIVERED) {
       updateData.deliveredAt = new Date();
+      
+      // Auto set payment status to PAID for delivered orders
+      if (currentOrder.paymentMethod === PaymentMethod.COD) {
+        updateData.paymentStatus = PaymentStatus.PAID;
+      }
       
       // If this is a guest order and delivered successfully, update guest customer stats
       if (currentOrder.isGuestOrder && currentOrder.shippingAddress?.phone) {
@@ -360,6 +369,8 @@ export class OrdersService {
       updateData.cancelledAt = new Date();
       // Restore product stock
       await this.restoreProductStock(currentOrder.items);
+    } else if (status === OrderStatus.REFUNDED) {
+      updateData.paymentStatus = PaymentStatus.REFUNDED;
     }
 
     const order = await this.orderModel.findByIdAndUpdate(id, updateData, { new: true });
@@ -454,6 +465,9 @@ export class OrdersService {
           confirmedOrders: {
             $sum: { $cond: [{ $eq: ['$status', OrderStatus.CONFIRMED] }, 1, 0] }
           },
+          processingOrders: {
+            $sum: { $cond: [{ $eq: ['$status', OrderStatus.PROCESSING] }, 1, 0] }
+          },
           shippedOrders: {
             $sum: { $cond: [{ $eq: ['$status', OrderStatus.SHIPPED] }, 1, 0] }
           },
@@ -473,6 +487,7 @@ export class OrdersService {
       averageOrderValue: 0,
       pendingOrders: 0,
       confirmedOrders: 0,
+      processingOrders: 0,
       shippedOrders: 0,
       deliveredOrders: 0,
       cancelledOrders: 0,

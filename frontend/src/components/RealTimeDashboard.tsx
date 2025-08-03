@@ -9,7 +9,8 @@ import {
   ArrowTrendingDownIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  ClockIcon
+  ClockIcon,
+  TruckIcon
 } from '@heroicons/react/24/outline';
 import { analyticsService } from '../services/analyticsService';
 import { ordersService } from '../services/ordersService';
@@ -24,7 +25,10 @@ interface DashboardStats {
   lowStockCount: number;
   outOfStockCount: number;
   pendingOrders: number;
-  completedOrders: number;
+  processingOrders: number;
+  shippedOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
 }
 
 interface RecentActivity {
@@ -81,7 +85,10 @@ const RealTimeDashboard: React.FC = () => {
         lowStockCount: inventorySummary?.lowStockCount || 0,
         outOfStockCount: inventorySummary?.outOfStockCount || 0,
         pendingOrders: orderStats?.pendingOrders || 0,
-        completedOrders: orderStats?.completedOrders || 0
+        processingOrders: (orderStats?.confirmedOrders || 0) + (orderStats?.processingOrders || 0), // Combine confirmed + processing for display
+        shippedOrders: orderStats?.shippedOrders || 0,
+        deliveredOrders: orderStats?.deliveredOrders || 0,
+        cancelledOrders: orderStats?.cancelledOrders || 0
       };
 
       setStats(combinedStats);
@@ -248,6 +255,74 @@ const RealTimeDashboard: React.FC = () => {
             <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
             <span className="text-sm text-green-600">+8.2%</span>
             <span className="text-sm text-gray-500 ml-1">tăng trưởng</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Order Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        {/* Pending Orders */}
+        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Chờ xử lý</p>
+              <p className="text-xl font-bold text-yellow-600">
+                {stats?.pendingOrders || 0}
+              </p>
+            </div>
+            <ClockIcon className="h-8 w-8 text-yellow-500" />
+          </div>
+        </div>
+
+        {/* Processing Orders */}
+        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Đang xử lý</p>
+              <p className="text-xl font-bold text-blue-600">
+                {stats?.processingOrders || 0}
+              </p>
+            </div>
+            <ChartBarIcon className="h-8 w-8 text-blue-500" />
+          </div>
+        </div>
+
+        {/* Shipped Orders */}
+        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Đang giao</p>
+              <p className="text-xl font-bold text-purple-600">
+                {stats?.shippedOrders || 0}
+              </p>
+            </div>
+            <TruckIcon className="h-8 w-8 text-purple-500" />
+          </div>
+        </div>
+
+        {/* Delivered Orders */}
+        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Đã giao</p>
+              <p className="text-xl font-bold text-green-600">
+                {stats?.deliveredOrders || 0}
+              </p>
+            </div>
+            <CheckCircleIcon className="h-8 w-8 text-green-500" />
+          </div>
+        </div>
+
+        {/* Cancelled Orders */}
+        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Đã hủy</p>
+              <p className="text-xl font-bold text-red-600">
+                {stats?.cancelledOrders || 0}
+              </p>
+            </div>
+            <ExclamationTriangleIcon className="h-8 w-8 text-red-500" />
           </div>
         </div>
       </div>

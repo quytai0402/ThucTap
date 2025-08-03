@@ -43,7 +43,10 @@ export interface OrderFilters {
 export interface OrderStats {
   totalOrders: number;
   pendingOrders: number;
-  completedOrders: number;
+  confirmedOrders: number;
+  processingOrders: number;
+  shippedOrders: number;
+  deliveredOrders: number;
   cancelledOrders: number;
   totalRevenue: number;
   averageOrderValue: number;
@@ -254,7 +257,10 @@ class OrdersService {
       return response.data || {
         totalOrders: 0,
         pendingOrders: 0,
-        completedOrders: 0,
+        confirmedOrders: 0,
+        processingOrders: 0,
+        shippedOrders: 0,
+        deliveredOrders: 0,
         cancelledOrders: 0,
         totalRevenue: 0,
         averageOrderValue: 0
@@ -265,7 +271,10 @@ class OrdersService {
       return {
         totalOrders: 0,
         pendingOrders: 0,
-        completedOrders: 0,
+        confirmedOrders: 0,
+        processingOrders: 0,
+        shippedOrders: 0,
+        deliveredOrders: 0,
         cancelledOrders: 0,
         totalRevenue: 0,
         averageOrderValue: 0

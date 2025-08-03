@@ -13,6 +13,12 @@ export class AdminController {
     return this.clearDataService.clearAllData();
   }
 
+  @Post('cleanup-unrealistic-data')
+  @ApiOperation({ summary: 'Clean up unrealistic data in database' })
+  async cleanupUnrealisticData() {
+    return this.clearDataService.cleanUpUnrealisticData();
+  }
+
   @Get('stats')
   @ApiOperation({ summary: 'Get database statistics' })
   async getStats() {

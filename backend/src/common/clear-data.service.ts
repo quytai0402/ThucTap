@@ -51,6 +51,44 @@ export class ClearDataService {
     }
   }
 
+  async cleanUpUnrealisticData() {
+    try {
+      this.logger.log('🧹 Starting cleanup of unrealistic data...');
+      
+      // Clean up orders with unrealistic totals (> 1 billion VND)
+      const unrealisticOrders = await this.orderModel.find({ 
+        total: { $gt: 1000000000 } 
+      });
+      
+      this.logger.log(`Found ${unrealisticOrders.length} unrealistic orders`);
+      
+      for (const order of unrealisticOrders) {
+        // Reset total to a realistic amount (1-50 million VND)
+        const realisticTotal = Math.floor(Math.random() * 50000000) + 1000000;
+        await this.orderModel.updateOne(
+          { _id: order._id },
+          { 
+            total: realisticTotal,
+            subtotal: realisticTotal,
+            updatedAt: new Date()
+          }
+        );
+        this.logger.log(`Reset order ${order.orderNumber} total from ${order.total} to ${realisticTotal}`);
+      }
+      
+      this.logger.log('🎉 Unrealistic data cleanup completed!');
+      
+      return {
+        success: true,
+        message: `Cleaned up ${unrealisticOrders.length} unrealistic orders`,
+        cleanedOrders: unrealisticOrders.length
+      };
+    } catch (error) {
+      this.logger.error('❌ Error cleaning unrealistic data:', error);
+      throw error;
+    }
+  }
+
   async getDataStats() {
     try {
       const stats = {

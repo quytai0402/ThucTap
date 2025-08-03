@@ -163,7 +163,39 @@ export class UsersService {
                     $group: {
                       _id: null,
                       successfulOrders: { $sum: 1 },
-                      totalSpent: { $sum: '$total' }
+                      totalSpent: { 
+                        $sum: { 
+                          $cond: [
+                            { $and: [
+                              { $ne: ['$total', null] },
+                              { $type: ['$total', 'number'] }
+                            ]},
+                            '$total',
+                            0
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ],
+                // Refunded orders stats (for revenue adjustment)
+                refundedOrders: [
+                  { $match: { status: 'refunded' } },
+                  {
+                    $group: {
+                      _id: null,
+                      refundedAmount: { 
+                        $sum: { 
+                          $cond: [
+                            { $and: [
+                              { $ne: ['$total', null] },
+                              { $type: ['$total', 'number'] }
+                            ]},
+                            '$total',
+                            0
+                          ]
+                        }
+                      }
                     }
                   }
                 ]
@@ -188,8 +220,19 @@ export class UsersService {
             ]
           },
           totalSpent: { 
-            $ifNull: [
-              { $arrayElemAt: ['$orderStats.deliveredOrders.totalSpent', 0] }, 
+            $max: [
+              { 
+                $subtract: [
+                  { $ifNull: [
+                    { $arrayElemAt: ['$orderStats.deliveredOrders.totalSpent', 0] }, 
+                    0
+                  ]},
+                  { $ifNull: [
+                    { $arrayElemAt: ['$orderStats.refundedOrders.refundedAmount', 0] }, 
+                    0
+                  ]}
+                ]
+              },
               0
             ]
           },

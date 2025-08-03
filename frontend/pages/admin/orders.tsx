@@ -18,7 +18,8 @@ import {
   TruckIcon,
   ClockIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 
 interface OrderItem {
@@ -160,10 +161,12 @@ const AdminOrders = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+      case 'confirmed': return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300';
       case 'processing': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
       case 'shipped': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
       case 'delivered': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      case 'refunded': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }
   };
@@ -173,6 +176,7 @@ const AdminOrders = () => {
       case 'pending': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
       case 'paid': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       case 'failed': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+      case 'refunded': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }
   };
@@ -180,10 +184,12 @@ const AdminOrders = () => {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'pending': return 'Chờ xử lý';
+      case 'confirmed': return 'Đã xác nhận';
       case 'processing': return 'Đang xử lý';
       case 'shipped': return 'Đang giao';
       case 'delivered': return 'Đã giao';
       case 'cancelled': return 'Đã hủy';
+      case 'refunded': return 'Đã hoàn tiền';
       default: return status;
     }
   };
@@ -193,6 +199,7 @@ const AdminOrders = () => {
       case 'pending': return 'Chờ thanh toán';
       case 'paid': return 'Đã thanh toán';
       case 'failed': return 'Thất bại';
+      case 'refunded': return 'Đã hoàn tiền';
       default: return status;
     }
   };
@@ -346,8 +353,11 @@ const AdminOrders = () => {
   const stats = {
     totalOrders: orders && Array.isArray(orders) ? orders.length : 0,
     pendingOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'pending').length : 0,
+    confirmedOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'confirmed').length : 0,
     processingOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'processing').length : 0,
-    completedOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'delivered').length : 0,
+    shippedOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'shipped').length : 0,
+    deliveredOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'delivered').length : 0,
+    cancelledOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'cancelled').length : 0,
     // Chỉ tính doanh thu từ đơn hàng đã giao
     totalRevenue: orders && Array.isArray(orders) ? orders
       .filter(order => order.status === 'delivered')
@@ -377,64 +387,96 @@ const AdminOrders = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {/* Tổng đơn hàng */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                <CurrencyDollarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <CurrencyDollarIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tổng đơn hàng</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalOrders}</p>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Tổng đơn hàng</p>
+                <p className="text-xl font-bold text-gray-900 dark:text-white">{stats.totalOrders}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          {/* Chờ xử lý */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 border-l-4 border-l-yellow-400">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
-                <ClockIcon className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                <ClockIcon className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Chờ xử lý</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.pendingOrders}</p>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Chờ xử lý</p>
+                <p className="text-xl font-bold text-yellow-600">{stats.pendingOrders}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          {/* Đang xử lý (Confirmed + Processing) */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 border-l-4 border-l-blue-400">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                <CurrencyDollarIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <ChartBarIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Đang xử lý</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.processingOrders}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                <CheckCircleIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Hoàn thành</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.completedOrders}</p>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Đang xử lý</p>
+                <p className="text-xl font-bold text-blue-600">{stats.confirmedOrders + stats.processingOrders}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          {/* Đang giao */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 border-l-4 border-l-purple-400">
+            <div className="flex items-center">
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                <TruckIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Đang giao</p>
+                <p className="text-xl font-bold text-purple-600">{stats.shippedOrders}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Đã giao */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 border-l-4 border-l-green-400">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                <CurrencyDollarIcon className="h-6 w-6 text-green-600 dark:text-green-400" />
+                <CheckCircleIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Tổng doanh thu</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.totalRevenue)}</p>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Đã giao</p>
+                <p className="text-xl font-bold text-green-600">{stats.deliveredOrders}</p>
               </div>
+            </div>
+          </div>
+
+          {/* Đã hủy */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 border-l-4 border-l-red-400">
+            <div className="flex items-center">
+              <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Đã hủy</p>
+                <p className="text-xl font-bold text-red-600">{stats.cancelledOrders}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tổng doanh thu - Separated card */}
+        <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-sm p-6 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm font-medium">Tổng doanh thu</p>
+              <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
+              <p className="text-green-100 text-xs mt-1">Từ {stats.deliveredOrders} đơn hàng đã giao</p>
+            </div>
+            <div className="p-3 bg-white/10 rounded-lg">
+              <CurrencyDollarIcon className="h-8 w-8 text-white" />
             </div>
           </div>
         </div>
@@ -460,6 +502,7 @@ const AdminOrders = () => {
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="pending">Chờ xử lý</option>
+              <option value="confirmed">Đã xác nhận</option>
               <option value="processing">Đang xử lý</option>
               <option value="shipped">Đang giao</option>
               <option value="delivered">Đã giao</option>
@@ -589,6 +632,7 @@ const AdminOrders = () => {
                         className={`text-xs font-medium rounded-full px-2 py-1 border-0 focus:ring-2 focus:ring-blue-500 ${getStatusColor(order.status)}`}
                       >
                         <option value="pending">Chờ xử lý</option>
+                        <option value="confirmed">Đã xác nhận</option>
                         <option value="processing">Đang xử lý</option>
                         <option value="shipped">Đang giao</option>
                         <option value="delivered">Đã giao</option>

@@ -9,19 +9,6 @@ import api from '../src/utils/api'
 import { VNPayService } from '../src/services/vnpayService'
 import { VNPAY_CONFIG } from '../src/config/vnpay'
 import GuestInfoModal, { GuestInfo } from '../src/components/GuestInfoModal'
-import SmartAddressSelector from '../src/components/SmartAddressSelector'
-
-// Define Address interface to match SmartAddressSelector
-interface Address {
-  _id: string
-  name: string
-  phone: string
-  street: string
-  ward: string
-  district: string
-  city: string
-  isDefault: boolean
-}
 import { 
   CreditCardIcon,
   TruckIcon,
@@ -45,6 +32,33 @@ interface ShippingAddress {
   wardCode: string
   wardName: string
   note?: string
+}
+
+interface Province {
+  code: number
+  name: string
+  name_en: string
+  full_name: string
+  full_name_en: string
+  code_name: string
+}
+
+interface District {
+  code: number
+  name: string
+  name_en: string
+  full_name: string
+  full_name_en: string
+  code_name: string
+}
+
+interface Ward {
+  code: number
+  name: string
+  name_en: string
+  full_name: string
+  full_name_en: string
+  code_name: string
 }
 
 interface PaymentMethod {
@@ -80,7 +94,7 @@ export default function CheckoutPage() {
   const [isBuyNowMode, setIsBuyNowMode] = useState(false)
   const [buyNowItem, setBuyNowItem] = useState<any>(null)
 
-  // Address data - simplified since SmartAddressSelector handles the complex logic
+  // Address data
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     fullName: user?.name || '',
     phone: user?.phone || '',
@@ -95,8 +109,15 @@ export default function CheckoutPage() {
     note: ''
   })
   
+  // Province, District, Ward state
+  const [provinces, setProvinces] = useState<Province[]>([])
+  const [districts, setDistricts] = useState<District[]>([])
+  const [wards, setWards] = useState<Ward[]>([])
+  const [loadingProvinces, setLoadingProvinces] = useState(false)
+  const [loadingDistricts, setLoadingDistricts] = useState(false)
+  const [loadingWards, setLoadingWards] = useState(false)
+  
   const [selectedPayment, setSelectedPayment] = useState('cod')
-  const [selectedAddress, setSelectedAddress] = useState<any>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [errors, setErrors] = useState<{[key: string]: string}>({})
   const [showQRCode, setShowQRCode] = useState(false)
@@ -142,6 +163,102 @@ export default function CheckoutPage() {
 
   const shippingFee = currentTotalPrice > 1000000 ? 0 : 30000
   const finalTotal = currentTotalPrice + shippingFee
+
+  // Fetch provinces, districts, wards functions
+  const fetchProvinces = async () => {
+    try {
+      setLoadingProvinces(true)
+      const response = await api.get('/address-api/provinces')
+      setProvinces(response.data || [])
+    } catch (error) {
+      console.error('Error fetching provinces:', error)
+    } finally {
+      setLoadingProvinces(false)
+    }
+  }
+
+  const fetchDistricts = async (provinceCode: string) => {
+    try {
+      setLoadingDistricts(true)
+      const response = await api.get(`/address-api/districts?province_code=${provinceCode}`)
+      setDistricts(response.data || [])
+      setWards([]) // Reset wards when province changes
+    } catch (error) {
+      console.error('Error fetching districts:', error)
+    } finally {
+      setLoadingDistricts(false)
+    }
+  }
+
+  const fetchWards = async (districtCode: string) => {
+    try {
+      setLoadingWards(true)
+      const response = await api.get(`/address-api/wards?district_code=${districtCode}`)
+      setWards(response.data || [])
+    } catch (error) {
+      console.error('Error fetching wards:', error)
+    } finally {
+      setLoadingWards(false)
+    }
+  }
+
+  // Handler for address changes
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCode = e.target.value
+    const selectedProvince = provinces.find(p => p.code.toString() === selectedCode)
+    
+    setShippingAddress(prev => ({
+      ...prev,
+      provinceCode: selectedCode,
+      provinceName: selectedProvince?.name || '',
+      districtCode: '',
+      districtName: '',
+      wardCode: '',
+      wardName: ''
+    }))
+    
+    if (selectedCode) {
+      fetchDistricts(selectedCode)
+    } else {
+      setDistricts([])
+      setWards([])
+    }
+  }
+
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCode = e.target.value
+    const selectedDistrict = districts.find(d => d.code.toString() === selectedCode)
+    
+    setShippingAddress(prev => ({
+      ...prev,
+      districtCode: selectedCode,
+      districtName: selectedDistrict?.name || '',
+      wardCode: '',
+      wardName: ''
+    }))
+    
+    if (selectedCode) {
+      fetchWards(selectedCode)
+    } else {
+      setWards([])
+    }
+  }
+
+  const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedCode = e.target.value
+    const selectedWard = wards.find(w => w.code.toString() === selectedCode)
+    
+    setShippingAddress(prev => ({
+      ...prev,
+      wardCode: selectedCode,
+      wardName: selectedWard?.name || ''
+    }))
+  }
+
+  // Fetch provinces on component mount
+  useEffect(() => {
+    fetchProvinces()
+  }, [])
 
   // Check for Buy Now mode on component mount
   useEffect(() => {
@@ -377,22 +494,16 @@ export default function CheckoutPage() {
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {}
     
-    // For guest mode or when no address is selected, validate shippingAddress
-    if (isGuestMode || !selectedAddress) {
-      if (!shippingAddress.fullName.trim()) newErrors.fullName = 'Vui lòng nhập họ tên'
-      if (!shippingAddress.phone.trim()) newErrors.phone = 'Vui lòng nhập số điện thoại'
-      else if (!/^[0-9]{10,11}$/.test(shippingAddress.phone)) newErrors.phone = 'Số điện thoại không hợp lệ'
-      if (!shippingAddress.email.trim()) newErrors.email = 'Vui lòng nhập email'
-      else if (!/\S+@\S+\.\S+/.test(shippingAddress.email)) newErrors.email = 'Email không hợp lệ'
-      if (!shippingAddress.address.trim()) newErrors.address = 'Vui lòng nhập địa chỉ'
-      if (!shippingAddress.provinceCode) newErrors.provinceCode = 'Vui lòng chọn tỉnh/thành phố'
-      if (!shippingAddress.districtCode) newErrors.districtCode = 'Vui lòng chọn quận/huyện'
-      if (!shippingAddress.wardCode) newErrors.wardCode = 'Vui lòng chọn phường/xã'
-    } else {
-      // For authenticated users with selected address, validate selectedAddress
-      if (!selectedAddress.name?.trim()) newErrors.fullName = 'Vui lòng chọn hoặc thêm địa chỉ giao hàng'
-      if (!selectedAddress.phone?.trim()) newErrors.phone = 'Địa chỉ được chọn thiếu số điện thoại'
-    }
+    // Validate shipping address
+    if (!shippingAddress.fullName.trim()) newErrors.fullName = 'Vui lòng nhập họ tên'
+    if (!shippingAddress.phone.trim()) newErrors.phone = 'Vui lòng nhập số điện thoại'
+    else if (!/^[0-9]{10,11}$/.test(shippingAddress.phone)) newErrors.phone = 'Số điện thoại không hợp lệ'
+    if (!shippingAddress.email.trim()) newErrors.email = 'Vui lòng nhập email'
+    else if (!/\S+@\S+\.\S+/.test(shippingAddress.email)) newErrors.email = 'Email không hợp lệ'
+    if (!shippingAddress.address.trim()) newErrors.address = 'Vui lòng nhập địa chỉ'
+    if (!shippingAddress.provinceCode) newErrors.provinceCode = 'Vui lòng chọn tỉnh/thành phố'
+    if (!shippingAddress.districtCode) newErrors.districtCode = 'Vui lòng chọn quận/huyện'
+    if (!shippingAddress.wardCode) newErrors.wardCode = 'Vui lòng chọn phường/xã'
     
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -456,27 +567,10 @@ export default function CheckoutPage() {
   
   const processOrder = async (orderId: string) => {
     try {
-      // Determine which address to use
-      let addressToUse;
-      if (selectedAddress && !isGuestMode) {
-        // Use selected saved address for authenticated users
-        addressToUse = {
-          fullName: selectedAddress.name,
-          phone: selectedAddress.phone,
-          email: user?.email || '',
-          address: selectedAddress.street,
-          ward: selectedAddress.ward,
-          district: selectedAddress.district,
-          city: selectedAddress.city,
-          fullAddress: `${selectedAddress.street}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.city}`,
-          note: ''
-        }
-      } else {
-        // Use manual input address for guest users or when no address selected
-        addressToUse = {
-          ...shippingAddress,
-          fullAddress: `${shippingAddress.address}, ${shippingAddress.wardName}, ${shippingAddress.districtName}, ${shippingAddress.provinceName}`
-        }
+      // Use shippingAddress for order data
+      const addressToUse = {
+        ...shippingAddress,
+        fullAddress: `${shippingAddress.address}, ${shippingAddress.wardName}, ${shippingAddress.districtName}, ${shippingAddress.provinceName}`
       }
 
       const orderData = {
@@ -526,7 +620,7 @@ export default function CheckoutPage() {
         console.log('✅ Actual Order ID set:', order.orderNumber || order._id)
         
         // Auto-save address for authenticated users on first order
-        if (!isGuestMode && user && !selectedAddress && shippingAddress.fullName) {
+        if (!isGuestMode && user && shippingAddress.fullName) {
           try {
             const saveAddressData = {
               name: shippingAddress.fullName,
@@ -908,35 +1002,146 @@ export default function CheckoutPage() {
                   <h2 className="text-lg font-medium text-gray-900">Địa chỉ giao hàng</h2>
                 </div>
                 
-                {/* Smart Address Selector Component */}
-                <SmartAddressSelector
-                  userId={user?.id}
-                  user={user ? {
-                    name: user.name,
-                    phone: user.phone,
-                    email: user.email
-                  } : undefined}
-                  onAddressSelect={(address: Address | null) => {
-                    setSelectedAddress(address)
-                    // Convert address format for compatibility with existing shippingAddress state
-                    if (address) {
-                      setShippingAddress({
-                        fullName: address.name || user?.name || '',
-                        phone: address.phone || user?.phone || '',
-                        email: user?.email || '',
-                        address: address.street || '',
-                        provinceCode: '',
-                        provinceName: address.city || '',
-                        districtCode: '',
-                        districtName: address.district || '',
-                        wardCode: '',
-                        wardName: address.ward || '',
-                        note: ''
-                      })
-                    }
-                  }}
-                  selectedAddress={selectedAddress}
-                />
+                {/* Address Form */}
+                <div className="space-y-6">
+                  {/* Personal Info */}
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Họ tên người nhận <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={shippingAddress.fullName}
+                        onChange={(e) => setShippingAddress(prev => ({ ...prev, fullName: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Nhập họ tên"
+                      />
+                      {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Số điện thoại <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={shippingAddress.phone}
+                        onChange={(e) => setShippingAddress(prev => ({ ...prev, phone: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Nhập số điện thoại"
+                      />
+                      {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Email <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={shippingAddress.email}
+                      onChange={(e) => setShippingAddress(prev => ({ ...prev, email: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Nhập email"
+                    />
+                    {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                  </div>
+
+                  {/* Address Selection */}
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Tỉnh/Thành phố <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={shippingAddress.provinceCode}
+                        onChange={handleProvinceChange}
+                        disabled={loadingProvinces}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      >
+                        <option value="">Chọn tỉnh/thành phố</option>
+                        {provinces.map(province => (
+                          <option key={province.code} value={province.code}>
+                            {province.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.provinceCode && <p className="mt-1 text-sm text-red-600">{errors.provinceCode}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Quận/Huyện <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={shippingAddress.districtCode}
+                        onChange={handleDistrictChange}
+                        disabled={loadingDistricts || !shippingAddress.provinceCode}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      >
+                        <option value="">Chọn quận/huyện</option>
+                        {districts.map(district => (
+                          <option key={district.code} value={district.code}>
+                            {district.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.districtCode && <p className="mt-1 text-sm text-red-600">{errors.districtCode}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">
+                        Phường/Xã <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={shippingAddress.wardCode}
+                        onChange={handleWardChange}
+                        disabled={loadingWards || !shippingAddress.districtCode}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                      >
+                        <option value="">Chọn phường/xã</option>
+                        {wards.map(ward => (
+                          <option key={ward.code} value={ward.code}>
+                            {ward.name}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.wardCode && <p className="mt-1 text-sm text-red-600">{errors.wardCode}</p>}
+                    </div>
+                  </div>
+
+                  {/* Street Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Địa chỉ cụ thể <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={shippingAddress.address}
+                      onChange={(e) => setShippingAddress(prev => ({ ...prev, address: e.target.value }))}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Số nhà, tên đường..."
+                    />
+                    {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
+                  </div>
+
+                  {/* Note */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Ghi chú giao hàng
+                    </label>
+                    <textarea
+                      value={shippingAddress.note || ''}
+                      onChange={(e) => setShippingAddress(prev => ({ ...prev, note: e.target.value }))}
+                      rows={3}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Ghi chú thêm về địa chỉ giao hàng (tùy chọn)"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 

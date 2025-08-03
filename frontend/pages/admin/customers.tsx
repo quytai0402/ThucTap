@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../src/components/AdminLayout';
 import SearchAndFilter, { FilterConfig } from '../../src/components/SearchAndFilter';
 import { customerService } from '../../src/services/customerService';
+import api from '../../src/utils/api';
 import {
   EyeIcon,
   PencilIcon,
@@ -342,6 +343,25 @@ const AdminCustomers = () => {
     // Implement export functionality
   };
 
+  const handleCleanupData = async () => {
+    if (!confirm('Bạn có chắc muốn dọn dẹp dữ liệu không thực tế? Thao tác này sẽ reset các giá trị quá lớn về mức hợp lý.')) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const response = await api.post('/admin/cleanup-unrealistic-data');
+      alert(`✅ Đã dọn dẹp thành công ${response.data.cleanedOrders} đơn hàng không thực tế!`);
+      // Reload customers to reflect changes
+      await loadCustomers();
+    } catch (error) {
+      console.error('Error cleaning up data:', error);
+      alert('❌ Có lỗi xảy ra khi dọn dẹp dữ liệu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const cities = Array.from(new Set(customers.map(c => c.city)));
 
   const stats = {
@@ -351,12 +371,46 @@ const AdminCustomers = () => {
     blockedCustomers: customers.filter(c => c.status === 'blocked').length,
     guestCustomers: customers.filter(c => c.isGuest).length,
     registeredCustomers: customers.filter(c => !c.isGuest).length,
-    // Tính doanh thu từ khách hàng đã có đơn hàng hoàn thành
-    totalRevenue: customers.reduce((sum, customer) => sum + (customer.totalSpent || 0), 0),
-    // Tính giá trị trung bình đơn hàng dựa trên khách hàng có đơn hàng
-    averageOrderValue: customers.length > 0 ? 
-      customers.reduce((sum, customer) => sum + (customer.totalSpent || 0), 0) / 
-      Math.max(customers.reduce((sum, customer) => sum + (customer.totalOrders || 0), 0), 1) : 0
+    // Tính doanh thu từ khách hàng đã có đơn hàng hoàn thành với validation
+    totalRevenue: (() => {
+      const revenue = customers.reduce((sum, customer) => {
+        // Đảm bảo customerSpent là number, không phải string
+        let customerSpent = customer.totalSpent || 0;
+        if (typeof customerSpent === 'string') {
+          customerSpent = parseFloat(customerSpent) || 0;
+        }
+        // Kiểm tra số tiền không thực tế (quá 1 tỷ VNĐ)
+        if (customerSpent > 1000000000) {
+          console.warn(`Customer ${customer.name} has unrealistic totalSpent: ${customerSpent}`);
+          return sum; // Bỏ qua customer này
+        }
+        return sum + customerSpent;
+      }, 0);
+      return revenue;
+    })(),
+    // Tính giá trị trung bình đơn hàng với validation
+    averageOrderValue: (() => {
+      const totalOrders = customers.reduce((sum, customer) => sum + (customer.totalOrders || 0), 0);
+      const totalRevenue = customers.reduce((sum, customer) => {
+        const customerSpent = customer.totalSpent || 0;
+        // Kiểm tra số tiền không thực tế
+        if (customerSpent > 1000000000) {
+          return sum; // Bỏ qua customer này
+        }
+        return sum + customerSpent;
+      }, 0);
+      
+      if (totalOrders === 0) return 0;
+      const avgValue = totalRevenue / totalOrders;
+      
+      // Nếu giá trị trung bình quá cao (> 100 triệu), đặt về 0
+      if (avgValue > 100000000) {
+        console.warn(`Average order value too high: ${avgValue}`);
+        return 0;
+      }
+      
+      return avgValue;
+    })()
   };
 
   return (
@@ -371,6 +425,14 @@ const AdminCustomers = () => {
             </p>
           </div>
           <div className="mt-4 sm:mt-0 flex space-x-3">
+            <button
+              onClick={handleCleanupData}
+              disabled={loading}
+              className="inline-flex items-center px-4 py-2 border border-orange-300 dark:border-orange-600 rounded-lg shadow-sm text-sm font-medium text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 disabled:opacity-50"
+              title="Dọn dẹp dữ liệu không thực tế (> 1 tỷ VNĐ)"
+            >
+              🧹 Dọn dẹp DL
+            </button>
             <button
               onClick={handleExport}
               className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
