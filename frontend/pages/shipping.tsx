@@ -192,7 +192,7 @@ const Shipping: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Chính sách vận chuyển - LaptopStore</title>
+        <title>Chính sách vận chuyển - IT-Global</title>
         <meta name="description" content="Thông tin chi tiết về chính sách vận chuyển, phí giao hàng và thời gian giao hàng của LaptopStore" />
       </Head>
 

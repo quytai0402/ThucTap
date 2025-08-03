@@ -251,7 +251,7 @@ const ProfilePage: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Hồ sơ cá nhân - LaptopStore</title>
+        <title>Hồ sơ cá nhân - IT-Global</title>
         <meta name="description" content="Quản lý thông tin cá nhân và đơn hàng" />
       </Head>
 
@@ -286,7 +286,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Sidebar */}
               <div className="lg:col-span-1">
                 <div className="bg-white shadow-lg rounded-xl p-6">
@@ -311,7 +311,7 @@ const ProfilePage: React.FC = () => {
 
               {/* Content */}
               <div className="lg:col-span-3">
-                <div className="bg-white shadow-lg rounded-xl p-8">
+                <div className="bg-white p-6 rounded-xl shadow-md w-full">
                   {activeTab === 'info' && (
                     <div className="space-y-6">
                       <h2 className="text-xl font-semibold text-gray-900">Thông tin cá nhân</h2>

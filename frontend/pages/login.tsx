@@ -43,8 +43,8 @@ const LoginPage: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Đăng nhập - LaptopStore</title>
-        <meta name="description" content="Đăng nhập vào tài khoản LaptopStore để mua sắm và quản lý đơn hàng" />
+        <title>Đăng nhập - IT-Global</title>
+        <meta name="description" content="Đăng nhập vào tài khoản IT-Global để mua sắm và quản lý đơn hàng" />
       </Head>
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">

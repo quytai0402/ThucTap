@@ -209,44 +209,41 @@ export default function ProductDetailPage() {
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
           {/* Image gallery */}
-          <div className="flex flex-col-reverse">
-            {/* Image selector */}
-            <div className="hidden mt-6 w-full max-w-2xl mx-auto sm:block lg:max-w-none">
-              <div className="grid grid-cols-4 gap-4">
-                {product.images?.map((image, index) => (
-                  <button
-                    key={index}
-                    className={`relative h-24 bg-white rounded-lg overflow-hidden flex items-center justify-center text-sm font-medium uppercase text-gray-900 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105 ${
-                      selectedImage === index ? 'ring-2 ring-blue-500 shadow-lg' : 'shadow-md hover:shadow-lg'
-                    }`}
-                    onClick={() => setSelectedImage(index)}
-                  >
-                    <span className="sr-only">Image {index + 1}</span>
-                    <span className="absolute inset-0 rounded-lg overflow-hidden">
+            <div className="flex flex-col-reverse gap-6">
+              {/* Image selector */}
+              <div className="w-full sm:block lg:max-w-none">
+                <div className="grid grid-cols-4 gap-4">
+                  {product.images?.map((image, index) => (
+                    <button
+                      key={index}
+                      className={`relative aspect-square rounded-lg overflow-hidden border transition-all duration-200 ${
+                        selectedImage === index
+                          ? 'border-blue-500 ring-2 ring-blue-400'
+                          : 'border-gray-200 hover:scale-105'
+                      }`}
+                      onClick={() => setSelectedImage(index)}
+                    >
                       <Image
                         src={image || '/placeholder-product.jpg'}
-                        alt=""
+                        alt={`Thumbnail ${index + 1}`}
                         fill
-                        className="w-full h-full object-center object-cover transition-transform duration-200 hover:scale-110"
+                        className="object-cover object-center"
                       />
-                    </span>
-                  </button>
-                ))}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Main image */}
+              <div className="w-full relative aspect-square rounded-lg overflow-hidden shadow-md">
+                <Image
+                  src={product.images?.[selectedImage] || product.image || '/placeholder-product.jpg'}
+                  alt={product.name}
+                  fill
+                  className="object-cover object-center transition-transform duration-300 hover:scale-105"
+                />
               </div>
             </div>
-
-            {/* Main image */}
-            <div className="w-full aspect-w-1 aspect-h-1 overflow-hidden rounded-lg">
-              <Image
-                src={product.images?.[selectedImage] || product.image || '/placeholder-product.jpg'}
-                alt={product.name}
-                width={600}
-                height={600}
-                className="w-full h-full object-center object-cover transition-transform duration-300 hover:scale-105"
-              />
-            </div>
-          </div>
-
           {/* Product info */}
           <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
             <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-gray-900 mb-2">{product.name}</h1>
@@ -362,32 +359,48 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Add to cart */}
-            <div className="mt-8 flex space-x-4">
-              <button
-                onClick={handleAddToCart}
-                disabled={!product.inStock}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 border border-transparent rounded-lg py-3 px-8 flex items-center justify-center text-base font-medium text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transform transition duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg"
-              >
-                <ShoppingCartIcon className="h-5 w-5 mr-2" />
-                {product.inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
-              </button>
-              
-              <button
-                onClick={toggleFavorite}
-                className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-red-300 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg"
-              >
-                {isFavorite ? (
-                  <HeartSolidIcon className="h-6 w-6 text-red-500" />
-                ) : (
-                  <HeartIcon className="h-6 w-6 text-gray-400 hover:text-red-400" />
-                )}
-              </button>
+            {/* Add to cart section with blue theme */}
+<div className="mt-8 flex flex-wrap gap-4">
+  {/* Add to cart button */}
+  <button
+    onClick={handleAddToCart}
+    disabled={!product.inStock}
+    className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white font-medium text-base shadow-md transition-all duration-200 transform
+      ${product.inStock
+        ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:scale-105'
+        : 'bg-gray-300 cursor-not-allowed'
+      }
+    `}
+  >
+    <ShoppingCartIcon className="h-5 w-5" />
+    {product.inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
+  </button>
 
-              <button className="p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
-                <ShareIcon className="h-6 w-6 text-gray-400 hover:text-blue-500" />
-              </button>
-            </div>
+  {/* Favorite button with blue border when active */}
+  <button
+    onClick={toggleFavorite}
+    className={`p-3 rounded-xl border transition-all duration-200 transform shadow-md hover:shadow-lg hover:scale-105
+      ${isFavorite
+        ? 'border-blue-300 bg-blue-50'
+        : 'border-gray-300 hover:border-blue-300 hover:bg-blue-50'
+      }
+    `}
+  >
+    {isFavorite ? (
+      <HeartSolidIcon className="h-6 w-6 text-blue-600" />
+    ) : (
+      <HeartIcon className="h-6 w-6 text-gray-400 hover:text-blue-600" />
+    )}
+  </button>
+
+  {/* Share button with blue hover effect */}
+  <button
+    className="p-3 rounded-xl border border-gray-300 transition-all duration-200 transform shadow-md hover:shadow-lg hover:scale-105 hover:bg-blue-50 hover:border-blue-400"
+  >
+    <ShareIcon className="h-6 w-6 text-gray-400 hover:text-blue-600" />
+  </button>
+</div>
+
 
             {/* Features */}
             <div className="mt-8 border-t border-gray-200 pt-8">

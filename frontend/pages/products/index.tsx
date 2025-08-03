@@ -99,7 +99,7 @@ export default function ProductsPage() {
   return (
     <>
       <Head>
-        <title>Sản phẩm - LaptopStore</title>
+        <title>Sản phẩm - IT-Global</title>
         <meta name="description" content="Khám phá bộ sưu tập laptop đa dạng với giá tốt nhất" />
       </Head>
 
