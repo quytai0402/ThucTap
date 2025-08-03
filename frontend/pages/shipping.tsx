@@ -192,7 +192,7 @@ const Shipping: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Chính sách vận chuyển - LaptopStore</title>
+        <title>Chính sách vận chuyển - IT-Global</title>
         <meta name="description" content="Thông tin chi tiết về chính sách vận chuyển, phí giao hàng và thời gian giao hàng của LaptopStore" />
       </Head>
 
@@ -213,7 +213,7 @@ const Shipping: React.FC = () => {
         </div>
 
         {/* Order Tracking */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-xl p-8 shadow-lg">
               <div className="text-center mb-8">
@@ -227,7 +227,7 @@ const Shipping: React.FC = () => {
               
               <form onSubmit={handleTrackingSubmit} className="max-w-md mx-auto">
                 <div className="flex">
-                  <div className="relative flex-1">
+                  <div className="relative">
                     <input
                       type="text"
                       placeholder="Nhập mã đơn hàng..."
@@ -235,7 +235,7 @@ const Shipping: React.FC = () => {
                       onChange={(e) => setTrackingNumber(e.target.value)}
                       className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                     />
-                    <MagnifyingGlassIcon className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400 pointer-events-none" />
                   </div>
                   <button 
                     type="submit"
@@ -250,7 +250,7 @@ const Shipping: React.FC = () => {
         </div>
 
         {/* Shipping Methods */}
-        <div className="py-16 bg-white">
+        <div className="py-16 bg-gray-1oo">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -290,7 +290,7 @@ const Shipping: React.FC = () => {
         </div>
 
         {/* Shipping Zones */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -309,7 +309,7 @@ const Shipping: React.FC = () => {
                   onClick={() => setSelectedZone(zone.id)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedZone === zone.id
-                      ? 'bg-green-600 text-white'
+                      ? 'bg-green-600 text-black hover:bg-green-700 border border-green-700'
                       : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
                   }`}
                 >
@@ -378,76 +378,91 @@ const Shipping: React.FC = () => {
           </div>
         </div>
 
-        {/* Delivery Process */}
-        <div className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Quy trình giao hàng
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                5 bước từ khi đặt hàng đến khi nhận hàng
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
-              {deliveryProcess.map((step, index) => (
-                <div key={index} className="text-center">
-                  <div className="relative">
-                    <div className="w-16 h-16 bg-green-600 text-white rounded-full flex items-center justify-center text-xl font-bold mx-auto mb-4">
-                      {step.step}
+       {/* Delivery Process - Improved Layout */}
+          {/* Delivery Process with Arrow-Shaped Step Numbers */}
+          <div className="py-20 bg-gradient-to-r from-white to-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl font-extrabold text-gray-800 mb-4">
+                  Quy trình giao hàng
+                </h2>
+                <p className="text-gray-600 text-lg">
+                  Từng bước đảm bảo đơn hàng đến tay bạn nhanh chóng và an toàn
+                </p>
+              </div>
+
+              <div className="relative">
+                <div className="hidden md:block absolute top-10 left-0 right-0 h-1 bg-gray-200 z-0"></div>
+
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-10 relative z-10">
+                  {deliveryProcess.map((step, index) => (
+                    <div key={index} className="text-center flex flex-col items-center">
+                      {/* Arrow down shape with number inside */}
+                      <div className="relative mb-4">
+                        <div className="w-14 h-14 bg-white border-4 border-green-600 transform rotate-45 flex items-center justify-center shadow-md">
+                          <span className="transform -rotate-45 text-black text-xl font-bold">
+                            {step.step}
+                          </span>
+                        </div>
+                        {/* Tail triangle */}
+                        <div className="w-0 h-0 border-l-[14px] border-r-[14px] border-t-[14px] border-l-transparent border-r-transparent border-t-green-600 mx-auto -mt-1" />
+                      </div>
+
+                      {/* Card content */}
+                      <div className="bg-white p-4 rounded-xl shadow-md w-full min-h-[160px] transition-transform transform hover:-translate-y-1 hover:shadow-xl">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                          {step.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mb-2">{step.description}</p>
+                        <p className="text-xs text-green-600 font-medium">{step.time}</p>
+                      </div>
                     </div>
-                    {index < deliveryProcess.length - 1 && (
-                      <div className="hidden md:block absolute top-8 left-16 w-full h-0.5 bg-gray-300"></div>
-                    )}
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {step.title}
-                  </h3>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {step.description}
-                  </p>
-                  <p className="text-xs text-green-600 font-medium">
-                    {step.time}
-                  </p>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Packaging Info */}
-        <div className="py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Đóng gói & Vận chuyển
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Cam kết đóng gói cẩn thận và vận chuyển an toàn
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {packagingInfo.map((item, index) => (
-                <div key={index} className="bg-white rounded-xl p-6 shadow-lg text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <item.icon className="h-8 w-8 text-green-600" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                    {item.title}
-                  </h3>
-                  <p className="text-gray-600">
-                    {item.description}
+       {/* Packaging & Delivery Section */}
+            <section className="py-20 bg-gray-70">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+
+                {/* Section Header */}
+                <div className="text-center mb-14">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-3">
+                    Đóng gói & Vận chuyển
+                  </h2>
+                  <p className="text-gray-500 text-base sm:text-lg max-w-2xl mx-auto">
+                    Chúng tôi cam kết sản phẩm luôn được đóng gói chuyên nghiệp và giao hàng an toàn đến tay bạn.
                   </p>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
 
+                {/* Grid of Packaging Features */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {packagingInfo.map((item, index) => (
+                    <div
+                      key={index}
+                      className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow duration-300"
+                    >
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="bg-green-100 p-3 rounded-full">
+                          <item.icon className="w-6 h-6 text-green-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {item.title}
+                        </h3>
+                      </div>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                
+              </div>
+            </section>
         {/* Policies & Restrictions */}
-        <div className="py-16 bg-white">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               {/* Shipping Policies */}
@@ -502,7 +517,7 @@ const Shipping: React.FC = () => {
         </div>
 
         {/* Contact */}
-        <div className="py-16 bg-green-600 text-white">
+        <div className="py-20 bg-gradient-to-r from-green-600 via-green-500 to-green-600 text-white">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-bold mb-4">
               Cần hỗ trợ về vận chuyển?
@@ -513,13 +528,13 @@ const Shipping: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="tel:19001234"
-                className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                className="inline-block px-8 py-3 border-2 border-white text-black text-lg font-semibold rounded-xl hover:bg-gray-200 hover:text-black transition"
               >
                 Hotline: 1900-1234
               </a>
               <a
                 href="/support"
-                className="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-green-600 transition-colors"
+                className="inline-block px-8 py-3 border-2 border-white text-black text-lg font-semibold rounded-xl hover:bg-gray-200  hover:text-black transition"
               >
                 Gửi yêu cầu hỗ trợ
               </a>

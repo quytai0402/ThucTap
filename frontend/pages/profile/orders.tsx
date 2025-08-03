@@ -252,7 +252,7 @@ export default function ProfileOrdersPage() {
   return (
     <>
       <Head>
-        <title>Đơn hàng của tôi - LaptopStore</title>
+        <title>Đơn hàng của tôi - IT-Global</title>
         <meta name="description" content="Quản lý và theo dõi đơn hàng" />
       </Head>
       <Layout>

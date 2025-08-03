@@ -71,7 +71,7 @@ const Categories: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Danh mục sản phẩm - LaptopStore</title>
+        <title>Danh mục sản phẩm - IT-Global</title>
         <meta name="description" content="Khám phá các danh mục laptop đa dạng tại LaptopStore" />
       </Head>
 
@@ -91,7 +91,7 @@ const Categories: React.FC = () => {
         </div>
 
         {/* Categories Grid */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {categories.map((category) => (

@@ -153,12 +153,16 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
           {/* Logo section */}
           <div className="flex items-center justify-between h-20 px-6 bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-blue-800 dark:to-indigo-900">
             <div className="flex items-center">
-              <BuildingStorefrontIcon className="h-8 w-8 text-white mr-3" />
-              <div>
-                <h1 className="text-white text-xl font-bold">TechStore</h1>
-                <p className="text-blue-200 text-sm">Admin Panel</p>
+                <img
+                  src="https://it-global.net/public/main/img/icon.svg"
+                  alt="IT-Global Logo"
+                  className="h-10 w-10 mr-3 bg-white p-1 rounded"
+                />
+                <div>
+                  <h1 className="text-white text-xl font-bold">IT-Global</h1>
+                  <p className="text-blue-200 text-sm">Admin Panel</p>
+                </div>
               </div>
-            </div>
             <button
               onClick={toggleSidebar}
               className="lg:hidden text-white hover:bg-blue-700 p-2 rounded-lg"

@@ -8,7 +8,6 @@ import { useAuth } from '../../src/context/AuthContext'
 import { Product } from '../../src/types'
 import { productsService } from '../../src/services/productsService'
 import api from '../../src/utils/api'
-import toast from 'react-hot-toast'
 import { 
   StarIcon, 
   HeartIcon,
@@ -112,87 +111,25 @@ export default function ProductDetailPage() {
     }
   }
 
-  // Helper function to safely extract category name
-  const getCategoryName = (category: any): string => {
-    if (typeof category === 'string') return category;
-    if (category && typeof category === 'object' && 'name' in category) return category.name;
-    return 'Unknown';
-  };
-
-  // Check if product is actually in stock
-  const isActuallyInStock = (product: Product) => {
-    return product.inStock && (product.stock === undefined || product.stock > 0);
-  };
-
-  const handleAddToCart = async () => {
-    if (!product) return;
-    
-    if (!isActuallyInStock(product)) {
-      toast.error('Sản phẩm này hiện đã hết hàng!');
-      return;
-    }
-
-    if (quantity > (product.stock || 0)) {
-      toast.error(`Chỉ còn ${product.stock} sản phẩm trong kho!`);
-      return;
-    }
-    
-    // Convert product to cart item format
-    const cartItem = {
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      category: getCategoryName(product.category)
-    }
-    
-    // Add item quantity times
-    let success = true;
-    for (let i = 0; i < quantity; i++) {
-      const result = await addItem(cartItem);
-      if (!result) {
-        success = false;
-        break;
+  const handleAddToCart = () => {
+    if (product) {
+      // Convert product to cart item format
+      const cartItem = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        category: product.category
       }
+      
+      // Add item quantity times
+      for (let i = 0; i < quantity; i++) {
+        addItem(cartItem)
+      }
+      // Show success message or notification
+      alert('Đã thêm sản phẩm vào giỏ hàng!')
     }
-    
-    if (success) {
-      toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ hàng!`);
-    } else {
-      toast.error('Không thể thêm vào giỏ hàng. Sản phẩm có thể đã hết hàng!');
-    }
-  };
-
-  const handleBuyNow = async () => {
-    if (!product) return;
-    
-    if (!isActuallyInStock(product)) {
-      toast.error('Sản phẩm này hiện đã hết hàng!');
-      return;
-    }
-
-    if (quantity > (product.stock || 0)) {
-      toast.error(`Chỉ còn ${product.stock} sản phẩm trong kho!`);
-      return;
-    }
-    
-    // Tạo session mua ngay riêng biệt
-    const buyNowItem = {
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      category: getCategoryName(product.category),
-      quantity: quantity
-    };
-    
-    // Lưu thông tin "mua ngay" vào sessionStorage
-    sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
-    sessionStorage.setItem('isBuyNow', 'true');
-    
-    // Chuyển thẳng đến checkout
-    router.push('/checkout?mode=buynow');
-  };
+  }
 
   const toggleFavorite = () => {
     const favorites = JSON.parse(localStorage.getItem('favorites') || '[]')
@@ -272,44 +209,41 @@ export default function ProductDetailPage() {
 
         <div className="lg:grid lg:grid-cols-2 lg:gap-x-8 lg:items-start">
           {/* Image gallery */}
-          <div className="flex flex-col-reverse">
-            {/* Image selector */}
-            <div className="hidden mt-6 w-full max-w-2xl mx-auto sm:block lg:max-w-none">
-              <div className="grid grid-cols-4 gap-4">
-                {product.images?.map((image, index) => (
-                  <button
-                    key={index}
-                    className={`relative h-24 bg-white rounded-lg overflow-hidden flex items-center justify-center text-sm font-medium uppercase text-gray-900 cursor-pointer hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105 ${
-                      selectedImage === index ? 'ring-2 ring-blue-500 shadow-lg' : 'shadow-md hover:shadow-lg'
-                    }`}
-                    onClick={() => setSelectedImage(index)}
-                  >
-                    <span className="sr-only">Image {index + 1}</span>
-                    <span className="absolute inset-0 rounded-lg overflow-hidden">
+            <div className="flex flex-col-reverse gap-6">
+              {/* Image selector */}
+              <div className="w-full sm:block lg:max-w-none">
+                <div className="grid grid-cols-4 gap-4">
+                  {product.images?.map((image, index) => (
+                    <button
+                      key={index}
+                      className={`relative aspect-square rounded-lg overflow-hidden border transition-all duration-200 ${
+                        selectedImage === index
+                          ? 'border-blue-500 ring-2 ring-blue-400'
+                          : 'border-gray-200 hover:scale-105'
+                      }`}
+                      onClick={() => setSelectedImage(index)}
+                    >
                       <Image
                         src={image || '/placeholder-product.jpg'}
-                        alt=""
+                        alt={`Thumbnail ${index + 1}`}
                         fill
-                        className="w-full h-full object-center object-cover transition-transform duration-200 hover:scale-110"
+                        className="object-cover object-center"
                       />
-                    </span>
-                  </button>
-                ))}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Main image */}
+              <div className="w-full relative aspect-square rounded-lg overflow-hidden shadow-md">
+                <Image
+                  src={product.images?.[selectedImage] || product.image || '/placeholder-product.jpg'}
+                  alt={product.name}
+                  fill
+                  className="object-cover object-center transition-transform duration-300 hover:scale-105"
+                />
               </div>
             </div>
-
-            {/* Main image */}
-            <div className="w-full aspect-w-1 aspect-h-1 overflow-hidden rounded-lg">
-              <Image
-                src={product.images?.[selectedImage] || product.image || '/placeholder-product.jpg'}
-                alt={product.name}
-                width={600}
-                height={600}
-                className="w-full h-full object-center object-cover transition-transform duration-300 hover:scale-105"
-              />
-            </div>
-          </div>
-
           {/* Product info */}
           <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0">
             <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight text-gray-900 mb-2">{product.name}</h1>
@@ -331,33 +265,6 @@ export default function ProductDetailPage() {
                   🔥 Hot
                 </span>
               )}
-            </div>
-
-            {/* Category navigation */}
-            <div className="mb-4">
-              <p className="text-sm text-gray-600">
-                Danh mục: 
-                <Link 
-                  href={`/categories?category=${encodeURIComponent(getCategoryName(product.category))}`}
-                  className="text-blue-600 hover:text-blue-800 ml-1 hover:underline font-medium"
-                >
-                  {getCategoryName(product.category)}
-                </Link>
-              </p>
-            </div>
-
-            {/* Stock status */}
-            <div className="mb-4">
-              <div className="flex items-center space-x-2">
-                <div className={`w-3 h-3 rounded-full ${
-                  product && isActuallyInStock(product) ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
-                <span className={`text-sm font-medium ${
-                  product && isActuallyInStock(product) ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {product && isActuallyInStock(product) ? `Còn hàng (${product.stock} sản phẩm)` : 'Hết hàng'}
-                </span>
-              </div>
             </div>
 
             <div className="mt-4">
@@ -413,7 +320,7 @@ export default function ProductDetailPage() {
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <div className="flex items-center text-sm">
                   <span className="text-gray-600 w-20">Thương hiệu:</span>
-                  <span className="font-medium text-gray-900">{typeof product.brand === 'string' ? product.brand : (product.brand as any)?.name || 'N/A'}</span>
+                  <span className="font-medium text-gray-900">{product.brand}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <span className="text-gray-600 w-20">Tình trạng:</span>
@@ -452,53 +359,48 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="mt-8 space-y-4">
-              {/* Main action buttons */}
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={handleAddToCart}
-                  disabled={!product || !isActuallyInStock(product)}
-                  className="bg-gradient-to-r from-blue-600 to-blue-700 border border-transparent rounded-lg py-3 px-6 flex items-center justify-center text-base font-medium text-white hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transform transition duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg"
-                >
-                  <ShoppingCartIcon className="h-5 w-5 mr-2" />
-                  {product && isActuallyInStock(product) ? 'Thêm vào giỏ' : 'Hết hàng'}
-                </button>
-                
-                <button
-                  onClick={handleBuyNow}
-                  disabled={!product || !isActuallyInStock(product)}
-                  className="bg-gradient-to-r from-red-600 to-red-700 border border-transparent rounded-lg py-3 px-6 flex items-center justify-center text-base font-medium text-white hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transform transition duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg"
-                >
-                  <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  {product && isActuallyInStock(product) ? 'Mua ngay' : 'Hết hàng'}
-                </button>
-              </div>
-              
-              {/* Secondary action buttons */}
-              <div className="flex space-x-4">
-                <button
-                  onClick={toggleFavorite}
-                  className="flex-1 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-red-300 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center"
-                >
-                  {isFavorite ? (
-                    <HeartSolidIcon className="h-6 w-6 text-red-500" />
-                  ) : (
-                    <HeartIcon className="h-6 w-6 text-gray-400 hover:text-red-400" />
-                  )}
-                  <span className="ml-2 text-sm font-medium text-gray-700">
-                    {isFavorite ? 'Đã yêu thích' : 'Yêu thích'}
-                  </span>
-                </button>
+            {/* Add to cart section with blue theme */}
+<div className="mt-8 flex flex-wrap gap-4">
+  {/* Add to cart button */}
+  <button
+    onClick={handleAddToCart}
+    disabled={!product.inStock}
+    className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white font-medium text-base shadow-md transition-all duration-200 transform
+      ${product.inStock
+        ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:shadow-lg hover:scale-105'
+        : 'bg-gray-300 cursor-not-allowed'
+      }
+    `}
+  >
+    <ShoppingCartIcon className="h-5 w-5" />
+    {product.inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
+  </button>
 
-                <button className="flex-1 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg flex items-center justify-center">
-                  <ShareIcon className="h-6 w-6 text-gray-400 hover:text-blue-500" />
-                  <span className="ml-2 text-sm font-medium text-gray-700">Chia sẻ</span>
-                </button>
-              </div>
-            </div>
+  {/* Favorite button with blue border when active */}
+  <button
+    onClick={toggleFavorite}
+    className={`p-3 rounded-xl border transition-all duration-200 transform shadow-md hover:shadow-lg hover:scale-105
+      ${isFavorite
+        ? 'border-blue-300 bg-blue-50'
+        : 'border-gray-300 hover:border-blue-300 hover:bg-blue-50'
+      }
+    `}
+  >
+    {isFavorite ? (
+      <HeartSolidIcon className="h-6 w-6 text-blue-600" />
+    ) : (
+      <HeartIcon className="h-6 w-6 text-gray-400 hover:text-blue-600" />
+    )}
+  </button>
+
+  {/* Share button with blue hover effect */}
+  <button
+    className="p-3 rounded-xl border border-gray-300 transition-all duration-200 transform shadow-md hover:shadow-lg hover:scale-105 hover:bg-blue-50 hover:border-blue-400"
+  >
+    <ShareIcon className="h-6 w-6 text-gray-400 hover:text-blue-600" />
+  </button>
+</div>
+
 
             {/* Features */}
             <div className="mt-8 border-t border-gray-200 pt-8">

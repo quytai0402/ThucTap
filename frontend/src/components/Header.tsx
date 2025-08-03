@@ -48,10 +48,12 @@ const Header: React.FC = () => {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">L</span>
-              </div>
-              <span className="ml-2 text-xl font-bold text-gray-900">LaptopStore</span>
+              <img
+                src="https://it-global.net/public/main/img/icon.svg" // hoặc link online như: "https://example.com/logo.png"
+                alt="LaptopStore Logo"
+                className="w-10 h-10 object-contain rounded-lg"
+              />
+              <span className="ml-2 text-xl font-bold text-gray-900">IT-Global</span>
             </Link>
           </div>
 

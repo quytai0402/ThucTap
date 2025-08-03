@@ -172,8 +172,8 @@ const Return: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Chính sách đổi trả - LaptopStore</title>
-        <meta name="description" content="Chính sách đổi trả sản phẩm tại LaptopStore - Điều kiện, quy trình và thời gian xử lý" />
+        <title>Chính sách đổi trả - IT-Global</title>
+        <meta name="description" content="Chính sách đổi trả sản phẩm tại IT-Global - Điều kiện, quy trình và thời gian xử lý" />
       </Head>
 
       <Layout>
@@ -193,7 +193,7 @@ const Return: React.FC = () => {
         </div>
 
         {/* Quick Return Form */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-xl p-8 shadow-lg">
               <div className="text-center mb-8">
@@ -348,7 +348,7 @@ const Return: React.FC = () => {
         </div>
 
         {/* Return Process */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -531,7 +531,7 @@ const Return: React.FC = () => {
         </div>
 
         {/* Contact */}
-        <div className="py-16 bg-orange-600 text-white">
+        <div className="bg-gradient-to-r from-orange-600 to-red-600 text-white py-20">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-bold mb-4">
               Cần hỗ trợ đổi trả?
@@ -542,15 +542,15 @@ const Return: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
                 href="tel:19001234"
-                className="bg-white text-orange-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                className="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
               >
-                Hotline: 1900-1234
+                Hotline: 0987613161
               </a>
               <a
                 href="mailto:return@laptopstore.com"
-                className="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-orange-600 transition-colors"
+                className="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
               >
-                return@laptopstore.com
+                return@it-global.com
               </a>
             </div>
           </div>

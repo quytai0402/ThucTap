@@ -430,7 +430,7 @@ const AdminCustomers = () => {
               Theo dõi và quản lý thông tin khách hàng
             </p>
           </div>
-          <div className="mt-4 sm:mt-0 flex space-x-3">
+          <div className="mt-4 sm:mt-0">
             <button
               onClick={handleCleanupData}
               disabled={loading}

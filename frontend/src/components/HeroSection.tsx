@@ -133,7 +133,7 @@ const HeroSection: React.FC = () => {
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-white text-center">
                           <div className="text-6xl mb-4">💻</div>
-                          <div className="text-2xl font-bold">LaptopStore</div>
+                          <div className="text-2xl font-bold">IT-Global</div>
                         </div>
                       </div>
                     </div>

@@ -1,14 +1,15 @@
 import React from 'react'
 import Head from 'next/head'
 import Layout from '../src/components/Layout'
-import { 
-  ShieldCheckIcon, 
-  TruckIcon, 
+import {
+  ShieldCheckIcon,
+  TruckIcon,
   PhoneIcon,
   UserGroupIcon,
   StarIcon,
   ClockIcon
 } from '@heroicons/react/24/outline'
+import Image from 'next/image'
 
 const About: React.FC = () => {
   const features = [
@@ -64,7 +65,7 @@ const About: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <h1 className="text-4xl md:text-6xl font-bold mb-6">
-                Về LaptopStore
+                Về IT-Global
               </h1>
               <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
                 Chúng tôi cam kết mang đến cho khách hàng những sản phẩm laptop chất lượng cao 
@@ -74,41 +75,69 @@ const About: React.FC = () => {
           </div>
         </div>
 
-        {/* Story Section */}
-        <div className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="text-3xl font-bold text-gray-900 mb-6">
-                  Câu chuyện của chúng tôi
-                </h2>
-                <div className="space-y-4 text-gray-600">
-                  <p>
-                    LaptopStore được thành lập vào năm 2013 với mục tiêu trở thành cửa hàng laptop 
-                    uy tín hàng đầu tại Việt Nam. Xuất phát từ một cửa hàng nhỏ với đội ngũ chỉ 3 người, 
-                    chúng tôi đã không ngừng phát triển và mở rộng.
-                  </p>
-                  <p>
-                    Ngày hôm nay, LaptopStore đã trở thành một trong những cửa hàng laptop được khách hàng 
-                    tin tưởng nhất với hơn 50,000 khách hàng đã mua sắm và hài lòng với sản phẩm, dịch vụ 
-                    của chúng tôi.
-                  </p>
-                  <p>
-                    Chúng tôi tự hào là đại lý chính thức của các thương hiệu laptop hàng đầu thế giới 
-                    như Dell, HP, ASUS, Lenovo, Apple, MSI và nhiều thương hiệu khác.
-                  </p>
-                </div>
-              </div>
-              <div>
-                <img 
-                  src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=600&h=400&fit=crop"
-                  alt="LaptopStore Store"
-                  className="rounded-lg shadow-lg"
-                />
-              </div>
+        {/* About Layout Section */}
+        <div className="bg-white py-16 px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            Giới Thiệu Công Ty Chúng Tôi
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center mb-16">
+            <div className="w-full h-full">
+              <Image
+                src="https://it-global.net/public/main/img/icon.svg"
+                alt="Giới thiệu IT-Global"
+                width={600}
+                height={400}
+                className="rounded shadow-md object-cover w-full h-auto"
+              />
+            </div>
+
+            <div className="bg-white shadow-md rounded p-6 text-gray-700">
+              <h3 className="font-bold text-lg mb-3">
+                IT–Global Lĩnh vực về công nghệ thông tin
+              </h3>
+              <p className="mb-4">
+                Chúng tôi tin rằng mỗi khách hàng là đối tác của chúng tôi và chúng tôi hợp tác với bạn để cung cấp dịch vụ CNTT chất lượng, phù hợp.
+              </p>
+              <p className="mb-4">
+                Đội ngũ chuyên gia CNTT thân thiện, giàu kinh nghiệm và đáng tin cậy sẽ đến tận nơi, gọi điện hoặc nhận tin để hỗ trợ khách hàng.
+              </p>
+              <p className="mb-4">
+                Sứ mệnh của chúng tôi là mang đến nền tảng vận hành số hoá doanh nghiệp. Đồng hành cùng doanh nghiệp Việt Nam trên con đường chuyển đổi số.
+              </p>
+              <p className="mb-4">
+                Đội ngũ nhân viên say mê, yêu thích công nghệ và luôn hướng đến cái mới trong mọi công việc.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+            <div className="bg-white shadow-md rounded p-6 text-gray-800">
+              <h3 className="font-bold text-lg text-black mb-4">THÔNG TIN LIÊN HỆ IT–GLOBAL</h3>
+              <p className="mb-2">
+                <span className="font-semibold">– Trụ sở:</span> 2/1/15 đường 40, P.Hiệp Bình Chánh, Tp. Thủ Đức
+              </p>
+              <p className="mb-2">
+                <span className="font-semibold">– Điện thoại:</span> 0987.613.161 (Mr.Tân)
+              </p>
+              <p>
+                <span className="font-semibold">– Email:</span> info@it–global.net
+              </p>
+            </div>
+
+            <div className="w-full h-full">
+              <Image
+                src="https://it-global.net/public/main/img/icon.svg"
+                alt="Ảnh nhân sự"
+                width={600}
+                height={400}
+                className="rounded shadow-md object-cover w-full h-auto"
+              />
             </div>
           </div>
         </div>
+
+        {/* Phần khác giữ nguyên */}
 
         {/* Stats Section */}
         <div className="py-16 bg-gray-50">
@@ -179,7 +208,7 @@ const About: React.FC = () => {
         </div>
 
         {/* Contact CTA */}
-        <div className="py-16 bg-gray-900 text-white">
+        <div className="py-16 bg-gray-500 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-bold mb-4">
               Sẵn sàng mua sắm cùng chúng tôi?

@@ -191,7 +191,7 @@ const Payment: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Phương thức thanh toán - LaptopStore</title>
+        <title>Phương thức thanh toán - IT-Global</title>
         <meta name="description" content="Các phương thức thanh toán an toàn và tiện lợi tại LaptopStore - Thẻ tín dụng, chuyển khoản, ví điện tử, COD" />
       </Head>
 
@@ -383,7 +383,7 @@ const Payment: React.FC = () => {
         </div>
 
         {/* Installment Options */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -468,7 +468,7 @@ const Payment: React.FC = () => {
         </div>
 
         {/* Payment Process */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -537,10 +537,10 @@ const Payment: React.FC = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="tel:19001234"
+                href="tel:0987613161"
                 className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
-                Hotline: 1900-1234
+                Hotline: 0987613161
               </a>
               <a
                 href="/support"

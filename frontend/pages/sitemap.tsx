@@ -120,7 +120,7 @@ const Sitemap: React.FC = () => {
 
       <Layout>
         {/* Hero Section */}
-        <div className="bg-gradient-to-r from-gray-700 to-gray-900 text-white py-20">
+        <div className="bg-gradient-to-r from-gray-600 to-gray-700 text-white py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center">
               <MapIcon className="h-16 w-16 mx-auto mb-6" />
@@ -135,7 +135,7 @@ const Sitemap: React.FC = () => {
         </div>
 
         {/* Quick Navigation */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -161,7 +161,7 @@ const Sitemap: React.FC = () => {
         </div>
 
         {/* Popular Categories */}
-        <div className="py-16 bg-white">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -191,7 +191,7 @@ const Sitemap: React.FC = () => {
         </div>
 
         {/* Full Sitemap */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">

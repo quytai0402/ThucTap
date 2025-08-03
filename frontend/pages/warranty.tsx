@@ -113,7 +113,7 @@ const Warranty: React.FC = () => {
         </div>
 
         {/* Warranty Check */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="bg-white rounded-xl p-8 shadow-lg">
               <div className="text-center mb-8">
@@ -135,7 +135,7 @@ const Warranty: React.FC = () => {
                       onChange={(e) => setSerialNumber(e.target.value)}
                       className="w-full px-4 py-3 pl-10 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                    <MagnifyingGlassIcon className="absolute left-3 top-3.5 h-5 w-5 text-gray-400" />
+                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-gray-400 pointer-events-none" />
                   </div>
                   <button className="bg-blue-600 text-white px-6 py-3 rounded-r-lg hover:bg-blue-700 transition-colors">
                     Kiểm tra
@@ -150,7 +150,7 @@ const Warranty: React.FC = () => {
         </div>
 
         {/* Warranty Policies */}
-        <div className="py-16 bg-white">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -191,7 +191,7 @@ const Warranty: React.FC = () => {
         </div>
 
         {/* Warranty Process */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -291,7 +291,7 @@ const Warranty: React.FC = () => {
         </div>
 
         {/* Service Centers */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -356,7 +356,7 @@ const Warranty: React.FC = () => {
                 href="tel:19001234"
                 className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
-                Hotline: 1900-1234
+                Hotline: 0987613161
               </a>
               <a
                 href="/contact"

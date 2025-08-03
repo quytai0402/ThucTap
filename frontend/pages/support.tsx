@@ -145,7 +145,7 @@ const Support: React.FC = () => {
   return (
     <>
       <Head>
-        <title>Hỗ trợ khách hàng - LaptopStore</title>
+        <title>Hỗ trợ khách hàng - IT-Global</title>
         <meta name="description" content="Trung tâm hỗ trợ khách hàng LaptopStore - FAQ, liên hệ, tạo ticket hỗ trợ" />
       </Head>
 
@@ -165,14 +165,14 @@ const Support: React.FC = () => {
               {/* Quick Search */}
               <div className="max-w-2xl mx-auto">
                 <div className="relative">
+                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
                   <input
                     type="text"
                     placeholder="Tìm kiếm câu hỏi thường gặp..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-6 py-4 pl-12 text-gray-900 rounded-full focus:outline-none focus:ring-4 focus:ring-white/30"
+                    className="w-full px-6 py-4 pl-10 text-gray-900 bg-white rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-white/40 transition duration-200"
                   />
-                  <MagnifyingGlassIcon className="absolute left-4 top-4.5 h-6 w-6 text-gray-400" />
                 </div>
               </div>
             </div>
@@ -180,7 +180,7 @@ const Support: React.FC = () => {
         </div>
 
         {/* Support Channels */}
-        <div className="py-16 bg-white">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold text-gray-900 mb-4">
@@ -398,7 +398,7 @@ const Support: React.FC = () => {
               </div>
 
               {/* Quick Links */}
-              <div className="bg-gray-50 rounded-xl p-6 mt-6">
+              <div className="bg-gray-100 rounded-xl p-6 mt-6">
                 <h4 className="font-semibold text-gray-900 mb-4">Liên kết hữu ích</h4>
                 <div className="space-y-3">
                   <a href="/warranty" className="flex items-center text-blue-600 hover:text-blue-700">
@@ -424,7 +424,7 @@ const Support: React.FC = () => {
         </div>
 
         {/* Status Check */}
-        <div className="py-16 bg-gray-50">
+        <div className="py-16 bg-gray-100">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
               Kiểm tra trạng thái hỗ trợ
