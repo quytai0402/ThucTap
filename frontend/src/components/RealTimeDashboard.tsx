@@ -14,7 +14,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { analyticsService } from '../services/analyticsService';
 import { ordersService } from '../services/ordersService';
-import { inventoryService } from '../services/inventoryService';
 import productService from '../services/productService';
 
 interface DashboardStats {
@@ -65,14 +64,10 @@ const RealTimeDashboard: React.FC = () => {
       const [
         dashboardStats,
         orderStats,
-        inventorySummary,
-        inventoryAlerts,
         recentOrders
       ] = await Promise.all([
         analyticsService.getDashboardStats().catch(() => null),
         ordersService.getOrderStats().catch(() => null),
-        inventoryService.getInventorySummary().catch(() => null),
-        inventoryService.getInventoryAlerts().catch(() => ({ alerts: [] })),
         ordersService.getRecentOrders(5).catch(() => [])
       ]);
 
@@ -80,10 +75,10 @@ const RealTimeDashboard: React.FC = () => {
       const combinedStats: DashboardStats = {
         totalRevenue: dashboardStats?.totalRevenue || 0,
         totalOrders: dashboardStats?.totalOrders || orderStats?.totalOrders || 0,
-        totalProducts: dashboardStats?.totalProducts || inventorySummary?.totalProducts || 0,
+        totalProducts: dashboardStats?.totalProducts || 0,
         totalCustomers: dashboardStats?.totalUsers || 0,
-        lowStockCount: inventorySummary?.lowStockCount || 0,
-        outOfStockCount: inventorySummary?.outOfStockCount || 0,
+        lowStockCount: 0,
+        outOfStockCount: 0,
         pendingOrders: orderStats?.pendingOrders || 0,
         processingOrders: (orderStats?.confirmedOrders || 0) + (orderStats?.processingOrders || 0), // Combine confirmed + processing for display
         shippedOrders: orderStats?.shippedOrders || 0,
@@ -92,7 +87,7 @@ const RealTimeDashboard: React.FC = () => {
       };
 
       setStats(combinedStats);
-      setAlerts(inventoryAlerts.alerts || []);
+      setAlerts([]);
 
       // Format recent activity
       const activity: RecentActivity[] = [];
@@ -109,17 +104,6 @@ const RealTimeDashboard: React.FC = () => {
           });
         });
       }
-
-      // Add inventory alerts to activity
-      inventoryAlerts.alerts?.slice(0, 2).forEach((alert: any) => {
-        activity.push({
-          id: alert.product,
-          type: 'inventory',
-          message: alert.message,
-          timestamp: new Date().toISOString(),
-          status: alert.severity === 'error' ? 'error' : 'warning'
-        });
-      });
 
       setRecentActivity(activity);
       setLastUpdated(new Date());

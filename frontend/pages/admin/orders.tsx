@@ -19,7 +19,8 @@ import {
   ClockIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  ArrowUturnLeftIcon
 } from '@heroicons/react/24/outline';
 
 interface OrderItem {
@@ -358,10 +359,14 @@ const AdminOrders = () => {
     shippedOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'shipped').length : 0,
     deliveredOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'delivered').length : 0,
     cancelledOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'cancelled').length : 0,
-    // Chỉ tính doanh thu từ đơn hàng đã giao
+    refundedOrders: orders && Array.isArray(orders) ? orders.filter(o => o.status === 'refunded').length : 0,
+    // Tính doanh thu thực tế: delivered - refunded
     totalRevenue: orders && Array.isArray(orders) ? orders
       .filter(order => order.status === 'delivered')
-      .reduce((sum, order) => sum + order.total, 0) : 0
+      .reduce((sum, order) => sum + (typeof order.total === 'string' ? parseFloat(order.total) || 0 : order.total), 0) -
+      orders
+      .filter(order => order.status === 'refunded')
+      .reduce((sum, order) => sum + (typeof order.total === 'string' ? parseFloat(order.total) || 0 : order.total), 0) : 0
   };
 
   return (
@@ -387,7 +392,7 @@ const AdminOrders = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
           {/* Tổng đơn hàng */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center">
@@ -465,15 +470,37 @@ const AdminOrders = () => {
               </div>
             </div>
           </div>
+
+          {/* Hoàn tiền */}
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4 border-l-4 border-l-orange-400">
+            <div className="flex items-center">
+              <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
+                <ArrowUturnLeftIcon className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Hoàn tiền</p>
+                <p className="text-xl font-bold text-orange-600">{stats.refundedOrders}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Tổng doanh thu - Separated card */}
+        {/* Tổng doanh thu - Enhanced card with refund info */}
         <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-sm p-6 text-white">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100 text-sm font-medium">Tổng doanh thu</p>
-              <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
-              <p className="text-green-100 text-xs mt-1">Từ {stats.deliveredOrders} đơn hàng đã giao</p>
+            <div className="flex-1">
+              <p className="text-green-100 text-sm font-medium">Tổng doanh thu thực</p>
+              <p className="text-3xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
+              <div className="flex items-center space-x-4 mt-2">
+                <div className="text-green-100 text-xs">
+                  <span className="font-medium">Đã giao:</span> {stats.deliveredOrders} đơn
+                </div>
+                {stats.refundedOrders > 0 && (
+                  <div className="text-green-100 text-xs">
+                    <span className="font-medium">Hoàn tiền:</span> {stats.refundedOrders} đơn
+                  </div>
+                )}
+              </div>
             </div>
             <div className="p-3 bg-white/10 rounded-lg">
               <CurrencyDollarIcon className="h-8 w-8 text-white" />
@@ -507,6 +534,7 @@ const AdminOrders = () => {
               <option value="shipped">Đang giao</option>
               <option value="delivered">Đã giao</option>
               <option value="cancelled">Đã hủy</option>
+              <option value="refunded">Hoàn tiền</option>
             </select>
 
             <select
@@ -637,6 +665,7 @@ const AdminOrders = () => {
                         <option value="shipped">Đang giao</option>
                         <option value="delivered">Đã giao</option>
                         <option value="cancelled">Đã hủy</option>
+                        <option value="refunded">Hoàn tiền</option>
                       </select>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

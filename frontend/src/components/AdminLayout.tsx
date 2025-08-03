@@ -16,7 +16,6 @@ import {
   ChartPieIcon,
   ClipboardDocumentListIcon,
   PresentationChartLineIcon,
-  TruckIcon,
   Bars3Icon,
   XMarkIcon,
   SunIcon,
@@ -89,18 +88,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title }) => {
       href: '/admin/customers', 
       icon: UsersIcon,
       description: 'Quản lý khách hàng'
-    },
-    { 
-      name: 'Kho hàng', 
-      href: '/admin/inventory', 
-      icon: CubeIcon,
-      description: 'Quản lý tồn kho'
-    },
-    { 
-      name: 'Vận chuyển', 
-      href: '/admin/shipping', 
-      icon: TruckIcon,
-      description: 'Quản lý vận chuyển'
     },
     { 
       name: 'Cài đặt', 

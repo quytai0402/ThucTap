@@ -168,7 +168,7 @@ export class UsersService {
                           $cond: [
                             { $and: [
                               { $ne: ['$total', null] },
-                              { $type: ['$total', 'number'] }
+                              { $isNumber: '$total' }
                             ]},
                             '$total',
                             0
@@ -189,7 +189,7 @@ export class UsersService {
                           $cond: [
                             { $and: [
                               { $ne: ['$total', null] },
-                              { $type: ['$total', 'number'] }
+                              { $isNumber: '$total' }
                             ]},
                             '$total',
                             0
@@ -220,19 +220,8 @@ export class UsersService {
             ]
           },
           totalSpent: { 
-            $max: [
-              { 
-                $subtract: [
-                  { $ifNull: [
-                    { $arrayElemAt: ['$orderStats.deliveredOrders.totalSpent', 0] }, 
-                    0
-                  ]},
-                  { $ifNull: [
-                    { $arrayElemAt: ['$orderStats.refundedOrders.refundedAmount', 0] }, 
-                    0
-                  ]}
-                ]
-              },
+            $ifNull: [
+              { $arrayElemAt: ['$orderStats.deliveredOrders.totalSpent', 0] }, 
               0
             ]
           },

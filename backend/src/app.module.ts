@@ -13,7 +13,6 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { AddressesModule } from './addresses/addresses.module';
 import { AddressApiModule } from './address-api/address-api.module';
 import { AnalyticsModule } from './analytics/analytics.module';
-import { InventoryModule } from './inventory/inventory.module';
 import { UploadModule } from './upload/upload.module';
 import { ClearDataService } from './common/clear-data.service';
 import { AdminController } from './common/admin.controller';
@@ -25,7 +24,6 @@ import { Order, OrderSchema } from './common/schemas/order.schema';
 import { Review, ReviewSchema } from './common/schemas/review.schema';
 import { Favorite, FavoriteSchema } from './common/schemas/favorite.schema';
 import { Address, AddressSchema } from './common/schemas/address.schema';
-import { StockAdjustment, StockAdjustmentSchema } from './common/schemas/stock-adjustment.schema';
 import { GuestCustomer, GuestCustomerSchema } from './common/schemas/guest-customer.schema';
 import { Brand, BrandSchema } from './common/schemas/brand.schema';
 import { PaymentMethod, PaymentMethodSchema } from './common/schemas/payment-method.schema';
@@ -55,7 +53,6 @@ import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
       { name: Review.name, schema: ReviewSchema },
       { name: Favorite.name, schema: FavoriteSchema },
       { name: Address.name, schema: AddressSchema },
-      { name: StockAdjustment.name, schema: StockAdjustmentSchema },
       { name: GuestCustomer.name, schema: GuestCustomerSchema },
       { name: Brand.name, schema: BrandSchema },
       { name: PaymentMethod.name, schema: PaymentMethodSchema },
@@ -78,7 +75,6 @@ import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
     AddressesModule,
     AddressApiModule,
     AnalyticsModule,
-    InventoryModule,
     UploadModule,
     GuestCustomerModule,
     BrandsModule,

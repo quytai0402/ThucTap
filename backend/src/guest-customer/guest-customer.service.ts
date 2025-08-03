@@ -234,7 +234,18 @@ export class GuestCustomerService {
                     $group: {
                       _id: null,
                       successfulOrders: { $sum: 1 },
-                      totalSpent: { $sum: '$total' }
+                      totalSpent: { 
+                        $sum: { 
+                          $cond: [
+                            { $and: [
+                              { $ne: ['$total', null] },
+                              { $isNumber: '$total' }
+                            ]},
+                            '$total',
+                            0
+                          ]
+                        }
+                      }
                     }
                   }
                 ]
