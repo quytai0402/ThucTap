@@ -9,7 +9,7 @@ export interface CreateUserDto {
   email: string;
   password: string;
   fullName: string;
-  phone?: string;
+  phone: string; // Required phone number
   role?: UserRole;
 }
 
@@ -43,6 +43,15 @@ export class UsersService {
 
     if (existingUser) {
       throw new ConflictException('Email already exists');
+    }
+
+    // Check if phone number already exists
+    const existingPhone = await this.userModel.findOne({
+      phone: createUserDto.phone,
+    });
+
+    if (existingPhone) {
+      throw new ConflictException('Phone number already exists');
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 12);

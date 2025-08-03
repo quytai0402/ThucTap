@@ -13,7 +13,7 @@ export interface RegisterDto {
   password: string;
   name?: string;
   fullName?: string;
-  phone?: string;
+  phone: string; // Required phone number
 }
 
 @Injectable()
@@ -61,6 +61,16 @@ export class AuthService {
 
       if (!registerDto.fullName && !registerDto.name) {
         throw new BadRequestException('Name is required');
+      }
+
+      if (!registerDto.phone) {
+        throw new BadRequestException('Phone number is required');
+      }
+
+      // Validate phone format (Vietnamese phone number)
+      const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+      if (!phoneRegex.test(registerDto.phone)) {
+        throw new BadRequestException('Invalid phone number format');
       }
 
       const user = await this.usersService.create({

@@ -32,7 +32,7 @@ export class User {
   @Prop({ required: true })
   fullName: string;
 
-  @Prop()
+  @Prop({ required: true, unique: true })
   phone: string;
 
   @Prop({ type: String, enum: UserRole, default: UserRole.CUSTOMER })
@@ -100,3 +100,7 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
+// Create unique index for phone
+UserSchema.index({ phone: 1 }, { unique: true });
+UserSchema.index({ email: 1 }, { unique: true });

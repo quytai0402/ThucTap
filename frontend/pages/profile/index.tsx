@@ -70,8 +70,8 @@ const ProfilePage: React.FC = () => {
   const [editingAddress, setEditingAddress] = useState<Address | null>(null)
 
   const [newAddress, setNewAddress] = useState({
-    name: '',
-    phone: '',
+    name: user?.name || '',
+    phone: (user as any)?.phone || '',
     street: '',
     ward: '',
     district: '',
@@ -175,8 +175,8 @@ const ProfilePage: React.FC = () => {
       setShowAddressModal(false)
       setEditingAddress(null)
       setNewAddress({
-        name: '',
-        phone: '',
+        name: user?.name || '',
+        phone: (user as any)?.phone || '',
         street: '',
         ward: '',
         district: '',

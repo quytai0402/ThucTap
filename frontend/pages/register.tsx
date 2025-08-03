@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: ''
   })
@@ -26,6 +27,11 @@ export default function RegisterPage() {
     if (!formData.name.trim()) newErrors.name = 'Tên không được để trống'
     if (!formData.email.trim()) newErrors.email = 'Email không được để trống'
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email không hợp lệ'
+    
+    if (!formData.phone.trim()) newErrors.phone = 'Số điện thoại không được để trống'
+    else if (!/^(0[3|5|7|8|9])+([0-9]{8})$/.test(formData.phone)) {
+      newErrors.phone = 'Số điện thoại không hợp lệ (VD: 0901234567)'
+    }
     
     if (!formData.password) newErrors.password = 'Mật khẩu không được để trống'
     else if (formData.password.length < 6) newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự'
@@ -48,7 +54,7 @@ export default function RegisterPage() {
     setErrors({}) // Clear previous errors
     
     try {
-      await register(formData.name, formData.email, formData.password)
+      await register(formData.name, formData.email, formData.password, formData.phone)
       router.push('/')
     } catch (error: any) {
       console.error('Registration error:', error)
@@ -128,6 +134,26 @@ export default function RegisterPage() {
                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                   />
                   {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  Số điện thoại *
+                </label>
+                <div className="mt-1">
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    autoComplete="tel"
+                    required
+                    placeholder="0901234567"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  />
+                  {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
                 </div>
               </div>
 

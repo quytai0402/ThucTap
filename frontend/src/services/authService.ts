@@ -32,7 +32,7 @@ export interface RegisterData {
   lastName: string;
   email: string;
   password: string;
-  phone?: string;
+  phone: string; // Required phone number
   dateOfBirth?: string;
   gender?: 'male' | 'female' | 'other';
 }

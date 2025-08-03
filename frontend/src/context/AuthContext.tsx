@@ -20,7 +20,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
   logout: () => void;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, phone: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -61,11 +61,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.data) {
         const userData = response.data;
         setUser({
-          id: userData.id || userData._id,
-          name: userData.name || userData.fullName,
+          id: userData.id,
+          name: userData.name,
           email: userData.email,
           role: userData.role,
           avatar: userData.avatar,
+          phone: userData.phone,
         });
       } else {
         // Only remove token if we get a response but no data
@@ -126,12 +127,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, password: string, phone: string) => {
     try {
       const response = await api.post('/auth/register', {
         fullName: name,
         email,
         password,
+        phone,
       });
 
       if (response.data) {
@@ -143,6 +145,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email: userData.email,
           role: userData.role,
           avatar: userData.avatar,
+          phone: userData.phone,
         });
       } else {
         throw new Error('Registration failed');
