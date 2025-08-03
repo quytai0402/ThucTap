@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/smart-dev.js",
+    "dev:simple": "next dev",
+    "dev:port": "PORT=$1 npm run dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "detect-port": "node scripts/detect-port.js $PORT"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",

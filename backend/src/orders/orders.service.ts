@@ -3,7 +3,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Order, OrderDocument, OrderStatus, PaymentStatus, PaymentMethod } from '../common/schemas/order.schema';
 import { Product, ProductDocument } from '../common/schemas/product.schema';
+import { User, UserDocument } from '../common/schemas/user.schema';
 import { GuestCustomerService } from '../guest-customer/guest-customer.service';
+import { EmailService } from '../email/email.service';
 
 export interface CreateOrderDto {
   customer?: string; // Optional for guest orders
@@ -77,7 +79,8 @@ export class OrdersService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
-    private readonly guestCustomerService: GuestCustomerService
+    private readonly guestCustomerService: GuestCustomerService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<Order> {
@@ -139,6 +142,32 @@ export class OrdersService {
         console.error('Error processing guest customer:', error);
         // Don't fail the order creation if guest customer processing fails
       }
+    }
+    
+    // Send order confirmation email
+    try {
+      // Check if we have email address
+      let hasEmail = false;
+      
+      if (createOrderDto.isGuestOrder && createOrderDto.shippingAddress.email) {
+        hasEmail = true;
+      } else if (!createOrderDto.isGuestOrder) {
+        // For registered users, populate customer data to get email
+        const orderWithCustomer = await this.orderModel.findById(savedOrder._id).populate('customer').exec();
+        if (orderWithCustomer && orderWithCustomer.customer && (orderWithCustomer.customer as any).email) {
+          hasEmail = true;
+          // Update savedOrder to include customer data for email service
+          savedOrder.customer = orderWithCustomer.customer;
+        }
+      }
+      
+      if (hasEmail) {
+        await this.emailService.sendOrderConfirmation(savedOrder);
+        console.log(`Order confirmation email sent for order: ${savedOrder.orderNumber}`);
+      }
+    } catch (error) {
+      console.error('Error sending order confirmation email:', error);
+      // Don't fail the order creation if email sending fails
     }
     
     return this.findOne(savedOrder._id.toString());
@@ -294,6 +323,28 @@ export class OrdersService {
     }
 
     const order = await this.orderModel.findByIdAndUpdate(id, updateData, { new: true });
+    
+    // Send order status update email
+    try {
+      const updatedOrderWithDetails = await this.orderModel.findById(id).populate('customer').exec();
+      
+      // Check if we have email to send notification
+      let hasEmail = false;
+      
+      if (updatedOrderWithDetails.isGuestOrder && updatedOrderWithDetails.shippingAddress?.email) {
+        hasEmail = true;
+      } else if (!updatedOrderWithDetails.isGuestOrder && updatedOrderWithDetails.customer && (updatedOrderWithDetails.customer as any).email) {
+        hasEmail = true;
+      }
+      
+      if (hasEmail) {
+        await this.emailService.sendOrderStatusUpdate(updatedOrderWithDetails, currentOrder.status);
+        console.log(`Order status update email sent for order: ${updatedOrderWithDetails.orderNumber}, status: ${status}`);
+      }
+    } catch (error) {
+      console.error('Error sending order status update email:', error);
+      // Don't fail the order status update if email sending fails
+    }
     
     return this.findOne(id);
   }

@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react'
+import React, { useState, useContext, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -9,7 +9,7 @@ import api from '../src/utils/api'
 
 const LoginPage: React.FC = () => {
   const router = useRouter()
-  const { login } = useAuth()
+  const { login, user, isLoading: authLoading } = useAuth()
   
   const [formData, setFormData] = useState({
     email: '',
@@ -18,6 +18,14 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      const redirectTo = user.role === 'admin' ? '/admin' : '/'
+      router.push(redirectTo)
+    }
+  }, [user, authLoading, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -57,7 +65,25 @@ const LoginPage: React.FC = () => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   }
 
-  const isFormValid = formData.email && formData.password && isValidEmail(formData.email)
+  const isFormValid = formData.email.trim() !== '' && formData.password.trim() !== ''
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+          <div className="flex justify-center">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  // Don't render login form if user is already logged in
+  if (user) {
+    return null
+  }
 
   return (
     <>

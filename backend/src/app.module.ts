@@ -28,6 +28,7 @@ import { StockAdjustment, StockAdjustmentSchema } from './common/schemas/stock-a
 import { GuestCustomer, GuestCustomerSchema } from './common/schemas/guest-customer.schema';
 import { Brand, BrandSchema } from './common/schemas/brand.schema';
 import { BrandsModule } from './brands/brands.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -76,6 +77,7 @@ import { BrandsModule } from './brands/brands.module';
     UploadModule,
     GuestCustomerModule,
     BrandsModule,
+    EmailModule,
   ],
   controllers: [AdminController],
   providers: [ClearDataService],

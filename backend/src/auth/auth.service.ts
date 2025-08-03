@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { UserRole } from '../common/schemas/user.schema';
+import { EmailService } from '../email/email.service';
 
 export interface LoginDto {
   email: string;
@@ -21,6 +22,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<any> {
@@ -128,7 +130,58 @@ export class AuthService {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
-    await this.usersService.updatePassword(userId, newPassword);
+    await this.usersService.updatePassword(user._id.toString(), newPassword);
     return { message: 'Password updated successfully' };
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('User with this email does not exist');
+    }
+
+    // Generate reset token (valid for 15 minutes)
+    const resetToken = this.jwtService.sign(
+      { 
+        userId: user._id, 
+        email: user.email, 
+        type: 'password-reset' 
+      },
+      { expiresIn: '15m' }
+    );
+
+    // Send password reset email
+    try {
+      await this.emailService.sendPasswordResetEmail(user.email, resetToken);
+      return { message: 'Password reset email sent successfully' };
+    } catch (error) {
+      throw new BadRequestException('Failed to send password reset email');
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    try {
+      const decoded = this.jwtService.verify(token);
+      
+      if (decoded.type !== 'password-reset') {
+        throw new UnauthorizedException('Invalid reset token');
+      }
+
+      const user = await this.usersService.findByEmail(decoded.email);
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      await this.usersService.updatePassword(user._id.toString(), newPassword);
+      return { message: 'Password reset successfully' };
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Token đã hết hạn. Vui lòng yêu cầu đặt lại mật khẩu mới.');
+      }
+      if (error.name === 'JsonWebTokenError') {
+        throw new UnauthorizedException('Token không hợp lệ. Vui lòng kiểm tra lại đường link.');
+      }
+      throw error;
+    }
   }
 }

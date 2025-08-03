@@ -1,14 +1,25 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import Layout from '../src/components/Layout'
-import { EnvelopeIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
+import { useAuth } from '../src/context/AuthContext'
+import { EnvelopeIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 
 const ForgotPassword: React.FC = () => {
+  const router = useRouter()
+  const { user, isLoading: authLoading } = useAuth()
   const [email, setEmail] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/profile')
+    }
+  }, [user, authLoading, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -16,16 +27,108 @@ const ForgotPassword: React.FC = () => {
     setError('')
 
     try {
-      // TODO: Implement actual forgot password API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Simulate success
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Có lỗi xảy ra')
+      }
+
       setIsSubmitted(true)
-    } catch (error) {
-      setError('Có lỗi xảy ra. Vui lòng thử lại sau.')
+    } catch (error: any) {
+      setError(error.message || 'Có lỗi xảy ra. Vui lòng thử lại sau.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+          <div className="flex justify-center">
+            <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        </div>
+      </Layout>
+    )
+  }
+
+  // Show message if user is already logged in
+  if (user) {
+    return (
+      <>
+        <Head>
+          <title>Đã đăng nhập - LaptopStore</title>
+          <meta name="description" content="Bạn đã đăng nhập vào hệ thống" />
+        </Head>
+
+        <Layout>
+          <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+            <div className="sm:mx-auto sm:w-full sm:max-w-md">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center">
+                  <ExclamationTriangleIcon className="w-8 h-8 text-amber-600" />
+                </div>
+              </div>
+              <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                Bạn đã đăng nhập
+              </h2>
+              <p className="mt-2 text-center text-sm text-gray-600">
+                Bạn hiện đang đăng nhập với tài khoản: <strong>{user.email}</strong>
+              </p>
+            </div>
+
+            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+              <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+                <div className="text-center space-y-4">
+                  <div className="rounded-md bg-amber-50 p-4">
+                    <div className="text-sm text-amber-700">
+                      Bạn không thể sử dụng tính năng quên mật khẩu khi đã đăng nhập. 
+                      Nếu muốn đổi mật khẩu, vui lòng vào trang hồ sơ cá nhân.
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Link
+                      href="/profile"
+                      className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Đi đến hồ sơ cá nhân
+                    </Link>
+                    
+                    <Link
+                      href="/"
+                      className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Về trang chủ
+                    </Link>
+
+                    <button
+                      onClick={() => {
+                        // Logout functionality would go here
+                        localStorage.removeItem('token')
+                        window.location.href = '/login'
+                      }}
+                      className="w-full flex justify-center py-2 px-4 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      Đăng xuất và quên mật khẩu
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Layout>
+      </>
+    )
   }
 
   return (

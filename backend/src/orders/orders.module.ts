@@ -9,6 +9,7 @@ import { OrderHelper } from './order-helper.service';
 import { Order, OrderSchema } from '../common/schemas/order.schema';
 import { Product, ProductSchema } from '../common/schemas/product.schema';
 import { GuestCustomerModule } from '../guest-customer/guest-customer.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { GuestCustomerModule } from '../guest-customer/guest-customer.module';
       { name: Order.name, schema: OrderSchema },
       { name: Product.name, schema: ProductSchema }
     ]),
-    GuestCustomerModule
+    GuestCustomerModule,
+    EmailModule,
   ],
   controllers: [OrdersController, PaymentController, GuestOrdersController, AdminOrdersController],
   providers: [OrdersService, OrderHelper],
