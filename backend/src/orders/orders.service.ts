@@ -504,7 +504,7 @@ export class OrdersService {
       
       if (product.stock < item.quantity) {
         throw new BadRequestException(
-          `Insufficient stock for product ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`
+          `Insufficient stock for product ${item.product}. Available: ${product.stock}, Requested: ${item.quantity}`
         );
       }
     }

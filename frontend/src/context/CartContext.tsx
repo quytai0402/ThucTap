@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import Cookies from 'js-cookie';
+import { productService } from '../services/productService';
 
 // Helper function to safely extract category name
 const getCategoryName = (category: any): string => {
@@ -19,9 +20,9 @@ interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, 'quantity'>) => void;
+  addItem: (item: Omit<CartItem, 'quantity'>) => Promise<boolean>;
   removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  updateQuantity: (id: string, quantity: number) => Promise<boolean>;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -61,43 +62,91 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     Cookies.set('cart', JSON.stringify(items), { expires: 7 });
   }, [items]);
 
-  const addItem = (newItem: Omit<CartItem, 'quantity'>) => {
-    // Process category to ensure it's a string
-    const processedItem = {
-      ...newItem,
-      category: getCategoryName(newItem.category)
-    };
-    
-    setItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === processedItem.id);
-      
-      if (existingItem) {
-        return prevItems.map(item =>
-          item.id === processedItem.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      } else {
-        return [...prevItems, { ...processedItem, quantity: 1 }];
+  const addItem = async (newItem: Omit<CartItem, 'quantity'>): Promise<boolean> => {
+    try {
+      // Check current stock
+      const product = await productService.getProduct(newItem.id);
+      if (!product) {
+        console.error('Không thể kiểm tra stock của sản phẩm');
+        return false;
       }
-    });
+
+      const currentStock = product.stock || 0;
+      
+      // Check how many of this item are already in cart
+      const existingItem = items.find(item => item.id === newItem.id);
+      const currentInCart = existingItem ? existingItem.quantity : 0;
+      
+      // Check if we can add one more
+      if (currentInCart >= currentStock) {
+        console.warn(`Không thể thêm sản phẩm. Hết hàng! Còn lại: ${currentStock}, trong giỏ: ${currentInCart}`);
+        return false;
+      }
+
+      // Process category to ensure it's a string
+      const processedItem = {
+        ...newItem,
+        category: getCategoryName(newItem.category)
+      };
+      
+      setItems(prevItems => {
+        const existingItem = prevItems.find(item => item.id === processedItem.id);
+        
+        if (existingItem) {
+          return prevItems.map(item =>
+            item.id === processedItem.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          );
+        } else {
+          return [...prevItems, { ...processedItem, quantity: 1 }];
+        }
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Lỗi khi thêm sản phẩm vào giỏ hàng:', error);
+      return false;
+    }
   };
 
   const removeItem = (id: string) => {
     setItems(prevItems => prevItems.filter(item => item.id !== id));
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = async (id: string, quantity: number): Promise<boolean> => {
     if (quantity <= 0) {
       removeItem(id);
-      return;
+      return true;
     }
 
-    setItems(prevItems =>
-      prevItems.map(item =>
-        item.id === id ? { ...item, quantity } : item
-      )
-    );
+    try {
+      // Check current stock
+      const product = await productService.getProduct(id);
+      if (!product) {
+        console.error('Không thể kiểm tra stock của sản phẩm');
+        return false;
+      }
+
+      const currentStock = product.stock || 0;
+      
+      // Check if requested quantity is available
+      if (quantity > currentStock) {
+        console.warn(`Không thể cập nhật số lượng. Hết hàng! Còn lại: ${currentStock}, yêu cầu: ${quantity}`);
+        return false;
+      }
+
+      setItems(prevItems =>
+        prevItems.map(item =>
+          item.id === id ? { ...item, quantity } : item
+        )
+      );
+
+      return true;
+    } catch (error) {
+      console.error('Lỗi khi cập nhật số lượng:', error);
+      return false;
+    }
   };
 
   const clearCart = () => {

@@ -9,6 +9,7 @@ import { useCart } from '../../src/context/CartContext'
 import productService from '../../src/services/productService'
 import categoriesService from '../../src/services/categoriesService'
 import { ShoppingCartIcon } from '@heroicons/react/24/outline'
+import toast from 'react-hot-toast'
 
 export default function ProductsPage() {
   const router = useRouter()
@@ -153,18 +154,62 @@ export default function ProductsPage() {
     }).format(price)
   }
 
-  const handleAddToCart = (product: Product) => {
-    addItem({
+  // Helper function to safely extract category name
+  const getCategoryName = (category: any): string => {
+    if (typeof category === 'string') return category;
+    if (category && typeof category === 'object' && 'name' in category) return category.name;
+    return 'Unknown';
+  };
+
+  // Check if product is actually in stock
+  const isActuallyInStock = (product: Product) => {
+    return product.inStock && (product.stock === undefined || product.stock > 0);
+  };
+
+  const handleAddToCart = async (product: Product) => {
+    if (!isActuallyInStock(product)) {
+      toast.error('Sản phẩm này hiện đã hết hàng!');
+      return;
+    }
+
+    const success = await addItem({
       id: product._id || product.id,
       name: product.name,
       price: product.price,
       image: product.images?.[0] || '/images/placeholder-product.jpg',
-      category: product.category || ''
-    })
+      category: getCategoryName(product.category)
+    });
     
-    // Show notification (optional)
-    alert(`Đã thêm "${product.name}" vào giỏ hàng!`)
-  }
+    if (success) {
+      toast.success('Đã thêm vào giỏ hàng!');
+    } else {
+      toast.error('Không thể thêm vào giỏ hàng. Sản phẩm có thể đã hết hàng!');
+    }
+  };
+
+  const handleBuyNow = async (product: Product) => {
+    if (!isActuallyInStock(product)) {
+      toast.error('Sản phẩm này hiện đã hết hàng!');
+      return;
+    }
+    
+    // Tạo session mua ngay riêng biệt, không thêm vào giỏ hàng chung
+    const buyNowItem = {
+      id: product._id || product.id,
+      name: product.name,
+      price: product.price,
+      image: product.images?.[0] || '/images/placeholder-product.jpg',
+      category: getCategoryName(product.category),
+      quantity: 1
+    };
+    
+    // Lưu thông tin "mua ngay" vào sessionStorage
+    sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
+    sessionStorage.setItem('isBuyNow', 'true');
+    
+    // Chuyển thẳng đến checkout
+    router.push('/checkout?mode=buynow');
+  };
 
   return (
     <>
@@ -248,6 +293,26 @@ export default function ProductsPage() {
                         )}
                       </div>
                     </div>
+
+                    {/* Stock Display */}
+                    <div className="mb-3">
+                      {isActuallyInStock(product) ? (
+                        <div className="flex items-center text-sm">
+                          <span className="text-green-600 font-medium">
+                            Còn hàng
+                          </span>
+                          {product.stock !== undefined && (
+                            <span className="text-gray-500 ml-2">
+                              ({product.stock} sản phẩm)
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-red-600 text-sm font-medium">
+                          Hết hàng
+                        </span>
+                      )}
+                    </div>
                     
                     {/* Rating */}
                     {product.rating > 0 && (
@@ -274,14 +339,33 @@ export default function ProductsPage() {
                       </div>
                     )}
 
-                    {/* Add to Cart Button */}
-                    <button
-                      onClick={() => handleAddToCart(product)}
-                      className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCartIcon className="h-5 w-5" />
-                      Thêm vào giỏ hàng
-                    </button>
+                    {/* Action Buttons */}
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => handleAddToCart(product)}
+                        disabled={!isActuallyInStock(product)}
+                        className={`w-full py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                          isActuallyInStock(product)
+                            ? 'bg-blue-600 text-white hover:bg-blue-700'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        <ShoppingCartIcon className="h-5 w-5" />
+                        Thêm vào giỏ hàng
+                      </button>
+                      
+                      <button
+                        onClick={() => handleBuyNow(product)}
+                        disabled={!isActuallyInStock(product)}
+                        className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
+                          isActuallyInStock(product)
+                            ? 'bg-orange-600 text-white hover:bg-orange-700'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Mua ngay
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

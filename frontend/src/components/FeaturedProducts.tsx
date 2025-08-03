@@ -43,6 +43,7 @@ interface Product {
   rating: number;
   reviewCount: number;
   inStock: boolean;
+  stock?: number; // Thêm thông tin số lượng hàng
   isNew?: boolean;
   isHot?: boolean;
 }
@@ -119,6 +120,7 @@ const FeaturedProducts: React.FC = () => {
             rating: product.rating || 4.5,
             reviewCount: product.reviewCount || 0,
             inStock: (product.stock || 0) > 0,
+            stock: product.stock || 0, // Thêm thông tin số lượng hàng
             isNew: product.isFeatured || false,
             isHot: product.isOnSale || false
           }));

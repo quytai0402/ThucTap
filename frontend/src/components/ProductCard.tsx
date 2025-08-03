@@ -1,9 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/router';
 import { useCart } from '../context/CartContext';
 import { StarIcon, HeartIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import { StarIcon as StarIconSolid, ShoppingCartIcon } from '@heroicons/react/24/solid';
 import toast from 'react-hot-toast';
 
 interface Product {
@@ -16,6 +17,7 @@ interface Product {
   rating: number;
   reviewCount: number;
   inStock: boolean;
+  stock?: number; // Thêm thông tin số lượng hàng
   isNew?: boolean;
   isHot?: boolean;
 }
@@ -34,17 +36,56 @@ const getCategoryName = (category: string | { _id: string; name: string; slug: s
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) => {
   const { addItem } = useCart();
+  const router = useRouter();
   const [isWishlisted, setIsWishlisted] = React.useState(false);
 
-  const handleAddToCart = () => {
-    addItem({
+  // Tính toán trạng thái stock thông minh
+  const isActuallyInStock = product.inStock && (product.stock === undefined || product.stock > 0);
+  const stockDisplay = product.stock !== undefined ? product.stock : (product.inStock ? 'Có' : 0);
+
+  const handleAddToCart = async () => {
+    if (!isActuallyInStock) {
+      toast.error('Sản phẩm này hiện đã hết hàng!');
+      return;
+    }
+    
+    const success = await addItem({
       id: product.id,
       name: product.name,
       price: product.price,
       image: product.image,
       category: getCategoryName(product.category),
     });
-    toast.success('Đã thêm vào giỏ hàng!');
+    
+    if (success) {
+      toast.success('Đã thêm vào giỏ hàng!');
+    } else {
+      toast.error('Không thể thêm vào giỏ hàng. Sản phẩm có thể đã hết hàng!');
+    }
+  };
+
+  const handleBuyNow = async () => {
+    if (!isActuallyInStock) {
+      toast.error('Sản phẩm này hiện đã hết hàng!');
+      return;
+    }
+    
+    // Tạo session mua ngay riêng biệt, không thêm vào giỏ hàng chung
+    const buyNowItem = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      category: getCategoryName(product.category),
+      quantity: 1
+    };
+    
+    // Lưu thông tin "mua ngay" vào sessionStorage
+    sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
+    sessionStorage.setItem('isBuyNow', 'true');
+    
+    // Chuyển thẳng đến checkout
+    router.push('/checkout?mode=buynow');
   };
 
   const handleWishlist = () => {
@@ -104,10 +145,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           <button
             onClick={handleAddToCart}
-            disabled={!product.inStock}
+            disabled={!isActuallyInStock}
             className="w-full bg-white text-gray-900 font-semibold py-2 px-4 rounded-lg hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {product.inStock ? 'Thêm vào giỏ' : 'Hết hàng'}
+            {isActuallyInStock ? 'Thêm vào giỏ' : 'Hết hàng'}
           </button>
         </div>
       </div>
@@ -155,18 +196,41 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, className = '' }) =>
         </div>
 
         {/* Stock Status */}
-        <div className="flex items-center justify-between">
-          <span className={`text-xs ${product.inStock ? 'text-green-600' : 'text-red-600'}`}>
-            {product.inStock ? 'Còn hàng' : 'Hết hàng'}
-          </span>
-          
-          {/* Add to Cart Button */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className={`font-medium ${isActuallyInStock ? 'text-green-600' : 'text-red-600'}`}>
+              {isActuallyInStock 
+                ? (typeof stockDisplay === 'number' && stockDisplay > 0 
+                  ? `Còn ${stockDisplay} sản phẩm` 
+                  : 'Còn hàng') 
+                : 'Hết hàng'
+              }
+            </span>
+            {typeof stockDisplay === 'number' && stockDisplay > 0 && stockDisplay <= 5 && (
+              <span className="text-orange-500 text-xs font-medium">
+                Sắp hết!
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2">
           <button
             onClick={handleAddToCart}
-            disabled={!product.inStock}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!isActuallyInStock}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-medium py-2 px-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
           >
-            +
+            <ShoppingCartIcon className="h-4 w-4" />
+            {isActuallyInStock ? 'Thêm vào giỏ' : 'Hết hàng'}
+          </button>
+          
+          <button
+            onClick={handleBuyNow}
+            disabled={!isActuallyInStock}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isActuallyInStock ? 'Mua ngay' : 'Hết hàng'}
           </button>
         </div>
       </div>

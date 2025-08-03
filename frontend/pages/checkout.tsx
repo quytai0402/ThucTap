@@ -80,6 +80,10 @@ export default function CheckoutPage() {
   const { user } = useAuth()
   const router = useRouter()
 
+  // Buy Now mode state
+  const [isBuyNowMode, setIsBuyNowMode] = useState(false)
+  const [buyNowItem, setBuyNowItem] = useState<any>(null)
+
   // Address data
   const [provinces, setProvinces] = useState<Province[]>([])
   const [districts, setDistricts] = useState<District[]>([])
@@ -138,8 +142,32 @@ export default function CheckoutPage() {
     }
   ]
 
-  const shippingFee = totalPrice > 1000000 ? 0 : 30000
-  const finalTotal = totalPrice + shippingFee
+  // Calculate totals based on mode
+  const currentItems = isBuyNowMode ? (buyNowItem ? [buyNowItem] : []) : items
+  const currentTotalPrice = isBuyNowMode ? (buyNowItem ? buyNowItem.price * buyNowItem.quantity : 0) : totalPrice
+  const currentTotalItems = isBuyNowMode ? (buyNowItem ? buyNowItem.quantity : 0) : totalItems
+
+  const shippingFee = currentTotalPrice > 1000000 ? 0 : 30000
+  const finalTotal = currentTotalPrice + shippingFee
+
+  // Check for Buy Now mode on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const mode = urlParams.get('mode')
+    
+    if (mode === 'buynow') {
+      const storedBuyNowItem = sessionStorage.getItem('buyNowItem')
+      const isBuyNowFlag = sessionStorage.getItem('isBuyNow')
+      
+      if (storedBuyNowItem && isBuyNowFlag === 'true') {
+        setIsBuyNowMode(true)
+        setBuyNowItem(JSON.parse(storedBuyNowItem))
+      } else {
+        // Nếu không có data, redirect về trang chủ
+        router.push('/')
+      }
+    }
+  }, [router])
 
   // Load provinces on component mount
   useEffect(() => {
@@ -185,7 +213,12 @@ export default function CheckoutPage() {
   }, [guestInfo])
 
   useEffect(() => {
-    if (items.length === 0) {
+    // Skip validation if still loading buy now mode
+    if (router.query.mode === 'buynow' && !buyNowItem) {
+      return
+    }
+    
+    if (currentItems.length === 0) {
       router.push('/cart')
       return
     }
@@ -194,7 +227,7 @@ export default function CheckoutPage() {
       // Automatically set guest mode if no user is logged in
       setIsGuestMode(true)
     }
-  }, [user, items.length, router])
+  }, [user, currentItems.length, router, buyNowItem])
 
   // Realtime payment checking function
   const checkPaymentStatus = async (orderId: string) => {
@@ -524,7 +557,7 @@ export default function CheckoutPage() {
     try {
       const orderData = {
         orderId,
-        items: items.map(item => ({
+        items: currentItems.map(item => ({
           product: item.id,
           quantity: item.quantity,
           price: item.price
@@ -567,8 +600,14 @@ export default function CheckoutPage() {
           throw new Error('Đơn hàng được tạo nhưng không có ID');
         }
         
-        // Clear cart only if order was successfully created
-        clearCart();
+        // Clear cart only if order was successfully created and not in buy now mode
+        if (!isBuyNowMode) {
+          clearCart();
+        } else {
+          // Clear buy now session data
+          sessionStorage.removeItem('buyNowItem');
+          sessionStorage.removeItem('isBuyNow');
+        }
         
         // Redirect to success page with the order ID
         const orderIdToUse = order._id || orderId;
@@ -840,15 +879,45 @@ export default function CheckoutPage() {
     }
   }
 
-      if (items.length === 0) {
+  if (currentItems.length === 0) {
     return <Layout><div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div></div></Layout>
   }
 
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Buy Now Mode Banner */}
+        {isBuyNowMode && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <CheckCircleIcon className="h-5 w-5 text-blue-400" />
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Mua ngay:</strong> Bạn đang thanh toán trực tiếp cho sản phẩm này, không ảnh hưởng đến giỏ hàng hiện tại.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Thanh toán</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-gray-900">Thanh toán</h1>
+            {isBuyNowMode && (
+              <button
+                onClick={() => {
+                  sessionStorage.removeItem('buyNowItem');
+                  sessionStorage.removeItem('isBuyNow');
+                  router.back();
+                }}
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+              >
+                ← Quay lại sản phẩm
+              </button>
+            )}
+          </div>
           
           {isGuestMode && (
             <div className="mt-2 bg-blue-50 border border-blue-200 rounded-md p-4 mb-4">
@@ -1092,12 +1161,14 @@ export default function CheckoutPage() {
           {/* Order Summary */}
           <div className="mt-16 lg:mt-0 lg:col-span-5">
             <div className="bg-gray-50 rounded-lg px-4 py-6 sm:p-6 lg:p-8 sticky top-8">
-              <h2 className="text-lg font-medium text-gray-900 mb-6">Đơn hàng của bạn</h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-6">
+                {isBuyNowMode ? 'Mua ngay' : 'Đơn hàng của bạn'}
+              </h2>
 
               {/* Order items */}
               <div className="flow-root mb-6">
                 <ul className="-my-4 divide-y divide-gray-200">
-                  {items.map((item) => (
+                  {currentItems.map((item) => (
                     <li key={item.id} className="py-4 flex">
                       <div className="flex-shrink-0 w-16 h-16 border border-gray-200 rounded-md overflow-hidden">
                         <Image
@@ -1127,9 +1198,9 @@ export default function CheckoutPage() {
               {/* Price breakdown */}
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <dt className="text-sm text-gray-600">Tạm tính ({totalItems} sản phẩm)</dt>
+                  <dt className="text-sm text-gray-600">Tạm tính ({currentTotalItems} sản phẩm)</dt>
                   <dd className="text-sm font-medium text-gray-900">
-                    {totalPrice.toLocaleString('vi-VN')}₫
+                    {currentTotalPrice.toLocaleString('vi-VN')}₫
                   </dd>
                 </div>
 

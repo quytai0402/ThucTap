@@ -29,14 +29,26 @@ export class EmailService {
     try {
       const emailContent = this.generateOrderConfirmationEmail(order);
       
+      // Determine recipient email: guest orders use shippingAddress.email, registered users use customer.email
+      let recipientEmail: string | undefined;
+      if (order.isGuestOrder && order.shippingAddress.email) {
+        recipientEmail = order.shippingAddress.email;
+      } else if (order.customer && (order.customer as any).email) {
+        recipientEmail = (order.customer as any).email;
+      }
+
+      if (!recipientEmail) {
+        throw new Error('No email address found for order confirmation');
+      }
+      
       await this.transporter.sendMail({
         from: this.configService.get<string>('SMTP_USER'),
-        to: order.shippingAddress.email,
+        to: recipientEmail,
         subject: `Xác nhận đơn hàng #${order.orderNumber}`,
         html: emailContent,
       });
 
-      this.logger.log(`Order confirmation email sent for order ${order.orderNumber}`);
+      this.logger.log(`Order confirmation email sent for order ${order.orderNumber} to ${recipientEmail}`);
     } catch (error) {
       this.logger.error(`Failed to send order confirmation email: ${error.message}`);
     }
@@ -46,14 +58,26 @@ export class EmailService {
     try {
       const emailContent = this.generateOrderStatusUpdateEmail(order, previousStatus);
       
+      // Determine recipient email: guest orders use shippingAddress.email, registered users use customer.email
+      let recipientEmail: string | undefined;
+      if (order.isGuestOrder && order.shippingAddress.email) {
+        recipientEmail = order.shippingAddress.email;
+      } else if (order.customer && (order.customer as any).email) {
+        recipientEmail = (order.customer as any).email;
+      }
+
+      if (!recipientEmail) {
+        throw new Error('No email address found for order status update');
+      }
+      
       await this.transporter.sendMail({
         from: this.configService.get<string>('SMTP_USER'),
-        to: order.shippingAddress.email,
+        to: recipientEmail,
         subject: `Cập nhật đơn hàng #${order.orderNumber}`,
         html: emailContent,
       });
 
-      this.logger.log(`Order status update email sent for order ${order.orderNumber}`);
+      this.logger.log(`Order status update email sent for order ${order.orderNumber} to ${recipientEmail}`);
     } catch (error) {
       this.logger.error(`Failed to send order status update email: ${error.message}`);
     }
@@ -80,13 +104,35 @@ export class EmailService {
   private generateOrderConfirmationEmail(order: OrderDocument): string {
     const itemsHtml = order.items.map(item => `
       <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">
-          <img src="${item.image}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; margin-right: 10px;">
-          ${item.name}
+        <td style="padding: 15px; border-bottom: 1px solid #eee; vertical-align: top;">
+          <div style="display: flex; align-items: flex-start; gap: 15px;">
+            <img src="${item.image}" alt="${item.name}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #ddd;">
+            <div style="flex: 1;">
+              <h4 style="margin: 0 0 8px 0; color: #333; font-size: 16px;">${item.name}</h4>
+              ${item.specifications ? `
+                <div style="background-color: #f8f9fa; padding: 10px; border-radius: 6px; margin: 8px 0; font-size: 13px; color: #666;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px;">
+                    ${item.specifications.processor ? `<div><strong>CPU:</strong> ${item.specifications.processor}</div>` : ''}
+                    ${item.specifications.ram ? `<div><strong>RAM:</strong> ${item.specifications.ram}</div>` : ''}
+                    ${item.specifications.storage ? `<div><strong>Ổ cứng:</strong> ${item.specifications.storage}</div>` : ''}
+                    ${item.specifications.graphics ? `<div><strong>VGA:</strong> ${item.specifications.graphics}</div>` : ''}
+                    ${item.specifications.display ? `<div><strong>Màn hình:</strong> ${item.specifications.display}</div>` : ''}
+                    ${item.specifications.os ? `<div><strong>HĐH:</strong> ${item.specifications.os}</div>` : ''}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
         </td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${item.price.toLocaleString('vi-VN')}đ</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${(item.price * item.quantity).toLocaleString('vi-VN')}đ</td>
+        <td style="padding: 15px; border-bottom: 1px solid #eee; text-align: center; vertical-align: middle;">
+          <span style="background-color: #e3f2fd; color: #1976d2; padding: 6px 12px; border-radius: 20px; font-weight: bold;">${item.quantity}</span>
+        </td>
+        <td style="padding: 15px; border-bottom: 1px solid #eee; text-align: right; vertical-align: middle;">
+          <div style="font-weight: bold; color: #2563eb;">${item.price.toLocaleString('vi-VN')}đ</div>
+        </td>
+        <td style="padding: 15px; border-bottom: 1px solid #eee; text-align: right; vertical-align: middle;">
+          <div style="font-weight: bold; color: #059669; font-size: 16px;">${(item.price * item.quantity).toLocaleString('vi-VN')}đ</div>
+        </td>
       </tr>
     `).join('');
 

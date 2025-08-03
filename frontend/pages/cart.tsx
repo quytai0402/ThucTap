@@ -32,11 +32,14 @@ export default function CartPage() {
   const shippingFee = totalPrice > 1000000 ? 0 : 30000
   const finalTotal = totalPrice + shippingFee - discount
 
-  const handleQuantityChange = (productId: string, newQuantity: number) => {
+  const handleQuantityChange = async (productId: string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeItem(productId)
     } else {
-      updateQuantity(productId, newQuantity)
+      const success = await updateQuantity(productId, newQuantity)
+      if (!success) {
+        alert('Không thể cập nhật số lượng. Sản phẩm có thể đã hết hàng!')
+      }
     }
   }
 

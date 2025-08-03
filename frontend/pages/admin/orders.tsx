@@ -36,6 +36,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  orderNumber: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -94,6 +95,7 @@ const AdminOrders = () => {
       
       setOrders(ordersData.map((order: any) => ({
         id: order._id || order.id,
+        orderNumber: order.orderNumber,
         customerName: order.customer?.fullName || order.customer?.name || order.shippingAddress?.name || 'N/A',
         customerEmail: order.customer?.email || order.shippingAddress?.email || '',
         customerPhone: order.customer?.phone || order.shippingAddress?.phone || '',
@@ -132,6 +134,7 @@ const AdminOrders = () => {
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          order.customerEmail.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     const matchesPayment = paymentFilter === 'all' || order.paymentStatus === paymentFilter;
@@ -545,7 +548,7 @@ const AdminOrders = () => {
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">#{order.id}</div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">#{order.orderNumber || order.id}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
