@@ -33,7 +33,6 @@ const Footer: React.FC = () => {
     ],
     support: [
       { name: 'FAQ', href: '/faq' },
-      { name: 'Hướng dẫn mua hàng', href: '/guide' },
       { name: 'Chính sách bảo mật', href: '/privacy' },
       { name: 'Điều khoản sử dụng', href: '/terms' },
       { name: 'Sơ đồ trang', href: '/sitemap' },
@@ -43,7 +42,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="flex items-center mb-4">
@@ -134,6 +133,23 @@ const Footer: React.FC = () => {
             <h3 className="text-lg font-semibold mb-4">Công ty</h3>
             <ul className="space-y-2">
               {footerLinks.company.map((link) => (
+                <li key={link.name}>
+                  <Link 
+                    href={link.href}
+                    className="text-gray-300 hover:text-white transition-colors duration-200"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Hỗ trợ</h3>
+            <ul className="space-y-2">
+              {footerLinks.support.map((link) => (
                 <li key={link.name}>
                   <Link 
                     href={link.href}
