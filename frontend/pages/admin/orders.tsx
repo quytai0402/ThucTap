@@ -712,7 +712,7 @@ const AdminOrders = () => {
                       <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div className="flex items-center justify-between mb-6">
                           <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                            Chi tiết đơn hàng #{order.id}
+                            Chi tiết đơn hàng #{order.orderNumber || order.id}
                           </h3>
                           <button
                             onClick={() => setShowOrderDetail(null)}

@@ -9,6 +9,19 @@ import api from '../src/utils/api'
 import { VNPayService } from '../src/services/vnpayService'
 import { VNPAY_CONFIG } from '../src/config/vnpay'
 import GuestInfoModal, { GuestInfo } from '../src/components/GuestInfoModal'
+import SmartAddressSelector from '../src/components/SmartAddressSelector'
+
+// Define Address interface to match SmartAddressSelector
+interface Address {
+  _id: string
+  name: string
+  phone: string
+  street: string
+  ward: string
+  district: string
+  city: string
+  isDefault: boolean
+}
 import { 
   CreditCardIcon,
   TruckIcon,
@@ -19,23 +32,6 @@ import {
   ExclamationCircleIcon,
   QrCodeIcon
 } from '@heroicons/react/24/outline'
-
-interface Province {
-  code: string
-  name: string
-  districts: District[]
-}
-
-interface District {
-  code: string
-  name: string
-  wards: Ward[]
-}
-
-interface Ward {
-  code: string
-  name: string
-}
 
 interface ShippingAddress {
   fullName: string
@@ -84,12 +80,7 @@ export default function CheckoutPage() {
   const [isBuyNowMode, setIsBuyNowMode] = useState(false)
   const [buyNowItem, setBuyNowItem] = useState<any>(null)
 
-  // Address data
-  const [provinces, setProvinces] = useState<Province[]>([])
-  const [districts, setDistricts] = useState<District[]>([])
-  const [wards, setWards] = useState<Ward[]>([])
-  const [loadingAddress, setLoadingAddress] = useState(false)
-
+  // Address data - simplified since SmartAddressSelector handles the complex logic
   const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
     fullName: user?.name || '',
     phone: user?.phone || '',
@@ -105,10 +96,12 @@ export default function CheckoutPage() {
   })
   
   const [selectedPayment, setSelectedPayment] = useState('cod')
+  const [selectedAddress, setSelectedAddress] = useState<any>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [errors, setErrors] = useState<{[key: string]: string}>({})
   const [showQRCode, setShowQRCode] = useState(false)
   const [tempOrderId, setTempOrderId] = useState('')
+  const [actualOrderId, setActualOrderId] = useState('') // ID thực từ database
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'checking' | 'confirmed' | 'failed'>('pending')
   const [paymentTimer, setPaymentTimer] = useState(0)
   const [realTimeChecker, setRealTimeChecker] = useState<NodeJS.Timeout | null>(null)
@@ -168,11 +161,6 @@ export default function CheckoutPage() {
       }
     }
   }, [router])
-
-  // Load provinces on component mount
-  useEffect(() => {
-    loadProvinces()
-  }, [])
 
   // Generate stable order ID that persists across reloads
   useEffect(() => {
@@ -340,7 +328,7 @@ export default function CheckoutPage() {
       setPaymentTimer(0)
       startPaymentTimer()
       // Start realtime payment checking
-      startRealTimeChecker(tempOrderId)
+      startRealTimeChecker(actualOrderId || tempOrderId)
     } else if (paymentId === 'credit_card') {
       // Show credit card form when credit card is selected
       setShowCreditCardForm(true)
@@ -378,65 +366,6 @@ export default function CheckoutPage() {
     setPaymentTimer(0)
   }
 
-  const loadProvinces = async () => {
-    try {
-      setLoadingAddress(true)
-      const response = await fetch('https://provinces.open-api.vn/api/p/')
-      const data = await response.json()
-      setProvinces(data)
-    } catch (error) {
-      console.error('Error loading provinces:', error)
-    } finally {
-      setLoadingAddress(false)
-    }
-  }
-
-  const loadDistricts = async (provinceCode: string) => {
-    try {
-      setLoadingAddress(true)
-      const response = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
-      const data = await response.json()
-      setDistricts(data.districts || [])
-      setWards([]) // Clear wards when province changes
-    } catch (error) {
-      console.error('Error loading districts:', error)
-      setDistricts([])
-    } finally {
-      setLoadingAddress(false)
-    }
-  }
-
-  const loadWards = async (districtCode: string) => {
-    try {
-      setLoadingAddress(true)
-      const response = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
-      const data = await response.json()
-      setWards(data.wards || [])
-    } catch (error) {
-      console.error('Error loading wards:', error)
-      setWards([])
-    } finally {
-      setLoadingAddress(false)
-    }
-  }
-
-  const validateForm = () => {
-    const newErrors: {[key: string]: string} = {}
-    
-    if (!shippingAddress.fullName.trim()) newErrors.fullName = 'Vui lòng nhập họ tên'
-    if (!shippingAddress.phone.trim()) newErrors.phone = 'Vui lòng nhập số điện thoại'
-    else if (!/^[0-9]{10,11}$/.test(shippingAddress.phone)) newErrors.phone = 'Số điện thoại không hợp lệ'
-    if (!shippingAddress.email.trim()) newErrors.email = 'Vui lòng nhập email'
-    else if (!/\S+@\S+\.\S+/.test(shippingAddress.email)) newErrors.email = 'Email không hợp lệ'
-    if (!shippingAddress.address.trim()) newErrors.address = 'Vui lòng nhập địa chỉ'
-    if (!shippingAddress.provinceCode) newErrors.provinceCode = 'Vui lòng chọn tỉnh/thành phố'
-    if (!shippingAddress.districtCode) newErrors.districtCode = 'Vui lòng chọn quận/huyện'
-    if (!shippingAddress.wardCode) newErrors.wardCode = 'Vui lòng chọn phường/xã'
-    
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setShippingAddress(prev => ({ ...prev, [name]: value }))
@@ -445,56 +374,28 @@ export default function CheckoutPage() {
     }
   }
 
-  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCode = e.target.value
-    const selectedProvince = provinces.find(p => p.code === selectedCode)
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {}
     
-    setShippingAddress(prev => ({
-      ...prev,
-      provinceCode: selectedCode,
-      provinceName: selectedProvince?.name || '',
-      districtCode: '',
-      districtName: '',
-      wardCode: '',
-      wardName: ''
-    }))
-    
-    if (selectedCode) {
-      loadDistricts(selectedCode)
+    // For guest mode or when no address is selected, validate shippingAddress
+    if (isGuestMode || !selectedAddress) {
+      if (!shippingAddress.fullName.trim()) newErrors.fullName = 'Vui lòng nhập họ tên'
+      if (!shippingAddress.phone.trim()) newErrors.phone = 'Vui lòng nhập số điện thoại'
+      else if (!/^[0-9]{10,11}$/.test(shippingAddress.phone)) newErrors.phone = 'Số điện thoại không hợp lệ'
+      if (!shippingAddress.email.trim()) newErrors.email = 'Vui lòng nhập email'
+      else if (!/\S+@\S+\.\S+/.test(shippingAddress.email)) newErrors.email = 'Email không hợp lệ'
+      if (!shippingAddress.address.trim()) newErrors.address = 'Vui lòng nhập địa chỉ'
+      if (!shippingAddress.provinceCode) newErrors.provinceCode = 'Vui lòng chọn tỉnh/thành phố'
+      if (!shippingAddress.districtCode) newErrors.districtCode = 'Vui lòng chọn quận/huyện'
+      if (!shippingAddress.wardCode) newErrors.wardCode = 'Vui lòng chọn phường/xã'
     } else {
-      setDistricts([])
-      setWards([])
+      // For authenticated users with selected address, validate selectedAddress
+      if (!selectedAddress.name?.trim()) newErrors.fullName = 'Vui lòng chọn hoặc thêm địa chỉ giao hàng'
+      if (!selectedAddress.phone?.trim()) newErrors.phone = 'Địa chỉ được chọn thiếu số điện thoại'
     }
-  }
-
-  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCode = e.target.value
-    const selectedDistrict = districts.find(d => d.code === selectedCode)
     
-    setShippingAddress(prev => ({
-      ...prev,
-      districtCode: selectedCode,
-      districtName: selectedDistrict?.name || '',
-      wardCode: '',
-      wardName: ''
-    }))
-    
-    if (selectedCode) {
-      loadWards(selectedCode)
-    } else {
-      setWards([])
-    }
-  }
-
-  const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedCode = e.target.value
-    const selectedWard = wards.find(w => w.code === selectedCode)
-    
-    setShippingAddress(prev => ({
-      ...prev,
-      wardCode: selectedCode,
-      wardName: selectedWard?.name || ''
-    }))
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -533,12 +434,12 @@ export default function CheckoutPage() {
         return // processCreditCardPayment đã handle tạo order
       } else {
         // Cho COD và Bank Transfer: tạo order với payment status = PENDING
-        await processOrder(currentOrderId)
+        const createdOrder = await processOrder(currentOrderId)
         
-        // Nếu là bank transfer, hiển thị thông tin chuyển khoản
-        if (selectedPayment === 'bank_transfer') {
+        // Nếu là bank transfer, hiển thị thông tin chuyển khoản với actual order ID
+        if (selectedPayment === 'bank_transfer' && actualOrderId) {
           setShowQRCode(true)
-          startRealTimeChecker(currentOrderId)
+          startRealTimeChecker(actualOrderId) // Dùng actual order ID
         }
       }
     } catch (error) {
@@ -555,6 +456,29 @@ export default function CheckoutPage() {
   
   const processOrder = async (orderId: string) => {
     try {
+      // Determine which address to use
+      let addressToUse;
+      if (selectedAddress && !isGuestMode) {
+        // Use selected saved address for authenticated users
+        addressToUse = {
+          fullName: selectedAddress.name,
+          phone: selectedAddress.phone,
+          email: user?.email || '',
+          address: selectedAddress.street,
+          ward: selectedAddress.ward,
+          district: selectedAddress.district,
+          city: selectedAddress.city,
+          fullAddress: `${selectedAddress.street}, ${selectedAddress.ward}, ${selectedAddress.district}, ${selectedAddress.city}`,
+          note: ''
+        }
+      } else {
+        // Use manual input address for guest users or when no address selected
+        addressToUse = {
+          ...shippingAddress,
+          fullAddress: `${shippingAddress.address}, ${shippingAddress.wardName}, ${shippingAddress.districtName}, ${shippingAddress.provinceName}`
+        }
+      }
+
       const orderData = {
         orderId,
         items: currentItems.map(item => ({
@@ -562,14 +486,11 @@ export default function CheckoutPage() {
           quantity: item.quantity,
           price: item.price
         })),
-        shippingAddress: {
-          ...shippingAddress,
-          fullAddress: `${shippingAddress.address}, ${shippingAddress.wardName}, ${shippingAddress.districtName}, ${shippingAddress.provinceName}`
-        },
+        shippingAddress: addressToUse,
         paymentMethod: selectedPayment,
         total: finalTotal,
         shippingFee,
-        note: shippingAddress.note,
+        note: addressToUse.note || shippingAddress.note,
         isGuestOrder: isGuestMode
       }
 
@@ -598,6 +519,31 @@ export default function CheckoutPage() {
         if (!order || !order._id) {
           console.error('Order created but missing ID:', order);
           throw new Error('Đơn hàng được tạo nhưng không có ID');
+        }
+
+        // Lưu actual order ID từ database (dùng orderNumber cho đồng bộ)
+        setActualOrderId(order.orderNumber || order._id)
+        console.log('✅ Actual Order ID set:', order.orderNumber || order._id)
+        
+        // Auto-save address for authenticated users on first order
+        if (!isGuestMode && user && !selectedAddress && shippingAddress.fullName) {
+          try {
+            const saveAddressData = {
+              name: shippingAddress.fullName,
+              phone: shippingAddress.phone,
+              street: shippingAddress.address,
+              ward: shippingAddress.wardName,
+              district: shippingAddress.districtName,
+              city: shippingAddress.provinceName,
+              isDefault: true
+            }
+            
+            await api.post('/addresses', saveAddressData)
+            console.log('✅ Địa chỉ đã được tự động lưu')
+          } catch (addressError) {
+            console.warn('⚠️ Không thể lưu địa chỉ tự động:', addressError)
+            // Don't fail the order if address saving fails
+          }
         }
         
         // Clear cart only if order was successfully created and not in buy now mode
@@ -644,7 +590,7 @@ export default function CheckoutPage() {
       sessionStorage.removeItem('checkoutOrderId')
       
       // Redirect to order-success
-      router.push(`/order-success?orderId=${tempOrderId}`)
+      router.push(`/order-success?orderId=${actualOrderId || tempOrderId}`)
       
     } catch (error) {
       console.error('Error processing order:', error)
@@ -665,7 +611,7 @@ export default function CheckoutPage() {
     setPaymentStatus('checking')
     
     // Call the realtime checker manually
-    const paymentDetected = await checkPaymentStatus(tempOrderId)
+    const paymentDetected = await checkPaymentStatus(actualOrderId || tempOrderId)
     
     if (!paymentDetected) {
       setPaymentStatus('pending')
@@ -954,7 +900,7 @@ export default function CheckoutPage() {
         <form onSubmit={handleSubmitOrder} className="lg:grid lg:grid-cols-12 lg:gap-x-12 lg:items-start xl:gap-x-16">
           {/* Shipping & Payment Info */}
           <div className="lg:col-span-7">
-            {/* Shipping Address */}
+            {/* Smart Address Selector */}
             <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
               <div className="px-4 py-5 sm:p-6">
                 <div className="flex items-center mb-4">
@@ -962,155 +908,35 @@ export default function CheckoutPage() {
                   <h2 className="text-lg font-medium text-gray-900">Địa chỉ giao hàng</h2>
                 </div>
                 
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <div className="sm:col-span-2">
-                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
-                      Họ và tên *
-                    </label>
-                    <input
-                      type="text"
-                      name="fullName"
-                      id="fullName"
-                      value={shippingAddress.fullName}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                      Số điện thoại *
-                    </label>
-                    <input
-                      type="tel"
-                      name="phone"
-                      id="phone"
-                      value={shippingAddress.phone}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      value={shippingAddress.email}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                      Địa chỉ cụ thể *
-                    </label>
-                    <input
-                      type="text"
-                      name="address"
-                      id="address"
-                      value={shippingAddress.address}
-                      onChange={handleInputChange}
-                      placeholder="Số nhà, tên đường..."
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    {errors.address && <p className="mt-1 text-sm text-red-600">{errors.address}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="provinceCode" className="block text-sm font-medium text-gray-700">
-                      Tỉnh/Thành phố *
-                    </label>
-                    <select
-                      name="provinceCode"
-                      id="provinceCode"
-                      value={shippingAddress.provinceCode}
-                      onChange={handleProvinceChange}
-                      disabled={loadingAddress}
-                      className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
-                        loadingAddress ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      <option value="">Chọn tỉnh/thành phố</option>
-                      {provinces.map((province) => (
-                        <option key={province.code} value={province.code}>
-                          {province.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.provinceCode && <p className="mt-1 text-sm text-red-600">{errors.provinceCode}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="districtCode" className="block text-sm font-medium text-gray-700">
-                      Quận/Huyện *
-                    </label>
-                    <select
-                      name="districtCode"
-                      id="districtCode"
-                      value={shippingAddress.districtCode}
-                      onChange={handleDistrictChange}
-                      disabled={loadingAddress || !shippingAddress.provinceCode}
-                      className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
-                        (loadingAddress || !shippingAddress.provinceCode) ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      <option value="">Chọn quận/huyện</option>
-                      {districts.map((district) => (
-                        <option key={district.code} value={district.code}>
-                          {district.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.districtCode && <p className="mt-1 text-sm text-red-600">{errors.districtCode}</p>}
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label htmlFor="wardCode" className="block text-sm font-medium text-gray-700">
-                      Phường/Xã *
-                    </label>
-                    <select
-                      name="wardCode"
-                      id="wardCode"
-                      value={shippingAddress.wardCode}
-                      onChange={handleWardChange}
-                      disabled={loadingAddress || !shippingAddress.districtCode}
-                      className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
-                        (loadingAddress || !shippingAddress.districtCode) ? 'opacity-50 cursor-not-allowed' : ''
-                      }`}
-                    >
-                      <option value="">Chọn phường/xã</option>
-                      {wards.map((ward) => (
-                        <option key={ward.code} value={ward.code}>
-                          {ward.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.wardCode && <p className="mt-1 text-sm text-red-600">{errors.wardCode}</p>}
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label htmlFor="note" className="block text-sm font-medium text-gray-700">
-                      Ghi chú (tùy chọn)
-                    </label>
-                    <textarea
-                      name="note"
-                      id="note"
-                      rows={3}
-                      value={shippingAddress.note}
-                      onChange={handleInputChange}
-                      placeholder="Ghi chú cho đơn hàng..."
-                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                </div>
+                {/* Smart Address Selector Component */}
+                <SmartAddressSelector
+                  userId={user?.id}
+                  user={user ? {
+                    name: user.name,
+                    phone: user.phone,
+                    email: user.email
+                  } : undefined}
+                  onAddressSelect={(address: Address | null) => {
+                    setSelectedAddress(address)
+                    // Convert address format for compatibility with existing shippingAddress state
+                    if (address) {
+                      setShippingAddress({
+                        fullName: address.name || user?.name || '',
+                        phone: address.phone || user?.phone || '',
+                        email: user?.email || '',
+                        address: address.street || '',
+                        provinceCode: '',
+                        provinceName: address.city || '',
+                        districtCode: '',
+                        districtName: address.district || '',
+                        wardCode: '',
+                        wardName: address.ward || '',
+                        note: ''
+                      })
+                    }
+                  }}
+                  selectedAddress={selectedAddress}
+                />
               </div>
             </div>
 
@@ -1331,7 +1157,7 @@ export default function CheckoutPage() {
               <div className="text-center mb-6">
                 <div className="bg-white border-2 border-gray-200 rounded-xl p-4 shadow-inner inline-block">
                   <img
-                    src={generateQRCodeURL(finalTotal, tempOrderId)}
+                    src={generateQRCodeURL(finalTotal, actualOrderId || tempOrderId)}
                     alt="QR Code thanh toán"
                     className="w-48 h-48 mx-auto"
                   />
@@ -1350,7 +1176,7 @@ export default function CheckoutPage() {
                     </p>
                   </div>
                   <p className="text-sm text-gray-500 mb-3">
-                    Mã đơn hàng: <span className="font-mono font-semibold">{tempOrderId}</span>
+                    Mã đơn hàng: <span className="font-mono font-semibold">{actualOrderId || tempOrderId}</span>
                   </p>
                 </div>
                 
@@ -1371,7 +1197,7 @@ export default function CheckoutPage() {
                     <div className="pt-2 border-t border-gray-300">
                       <span className="text-gray-600">Nội dung CK:</span>
                       <p className="font-mono text-sm bg-yellow-50 p-2 rounded mt-1 break-words">
-                        Thanh toan don hang {tempOrderId}
+                        Thanh toan don hang {actualOrderId || tempOrderId}
                       </p>
                     </div>
                   </div>
@@ -1554,7 +1380,7 @@ export default function CheckoutPage() {
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Mã đơn hàng: <span className="font-mono">{tempOrderId}</span>
+                  Mã đơn hàng: <span className="font-mono">{actualOrderId || tempOrderId}</span>
                 </p>
               </div>
 

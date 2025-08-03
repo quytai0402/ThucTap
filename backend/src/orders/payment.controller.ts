@@ -14,8 +14,8 @@ export class PaymentController {
     amount: number;
   }) {
     try {
-      // Find order by order number (not MongoDB ID)
-      const order = await this.ordersService.findByOrderNumber(body.orderId);
+      // Find order by _id or orderNumber
+      const order = await this.ordersService.findByIdOrOrderNumber(body.orderId);
       
       if (!order) {
         return {
@@ -62,8 +62,8 @@ export class PaymentController {
   @Get('check-payment/:orderId')
   async checkPaymentStatus(@Param('orderId') orderId: string) {
     try {
-      // Find order by ID (not orderNumber)
-      const order = await this.ordersService.findOne(orderId);
+      // Find order by _id or orderNumber
+      const order = await this.ordersService.findByIdOrOrderNumber(orderId);
       
       if (!order) {
         return {
@@ -113,7 +113,7 @@ export class PaymentController {
       const status = responseCode === '00' ? 'paid' : 'failed';
       
       // Find the order first
-      const order = await this.ordersService.findByOrderNumber(orderId);
+      const order = await this.ordersService.findByIdOrOrderNumber(orderId);
       if (order) {
         await this.ordersService.updatePaymentStatus(
           (order as any)._id.toString(),

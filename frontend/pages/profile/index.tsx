@@ -57,6 +57,39 @@ interface Favorite {
   createdAt: string
 }
 
+interface Province {
+  code: string
+  name: string
+}
+
+interface District {
+  code: string
+  name: string
+}
+
+interface Ward {
+  code: string
+  name: string
+}
+
+interface PaymentMethod {
+  _id: string
+  type: 'card' | 'bank_account' | 'ewallet'
+  name: string
+  cardNumber?: string
+  cardType?: string
+  expiryMonth?: number
+  expiryYear?: number
+  cardHolderName?: string
+  bankName?: string
+  accountNumber?: string
+  accountHolderName?: string
+  walletType?: string
+  walletId?: string
+  isDefault: boolean
+  isActive: boolean
+}
+
 const ProfilePage: React.FC = () => {
   const { user, logout } = useAuth()
   const router = useRouter()
@@ -64,14 +97,42 @@ const ProfilePage: React.FC = () => {
   const [orders, setOrders] = useState([])
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [addresses, setAddresses] = useState<Address[]>([])
+  const [paymentMethods, setPaymentMethods] = useState([])
   const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(false)
   const [showAddressModal, setShowAddressModal] = useState(false)
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [editingAddress, setEditingAddress] = useState<Address | null>(null)
+  const [editingPayment, setEditingPayment] = useState<any>(null)
+
+  // Address form states
+  const [provinces, setProvinces] = useState<Province[]>([])
+  const [districts, setDistricts] = useState<District[]>([])
+  const [wards, setWards] = useState<Ward[]>([])
+  const [selectedProvince, setSelectedProvince] = useState('')
+  const [selectedDistrict, setSelectedDistrict] = useState('')
+  const [selectedWard, setSelectedWard] = useState('')
+
+  // Payment form states
+  const [newPayment, setNewPayment] = useState({
+    type: 'card' as 'card' | 'bank_account' | 'ewallet',
+    name: '',
+    cardNumber: '',
+    cardType: '',
+    expiryMonth: '',
+    expiryYear: '',
+    cardHolderName: '',
+    bankName: '',
+    accountNumber: '',
+    accountHolderName: '',
+    walletType: '',
+    walletId: '',
+    isDefault: false
+  })
 
   const [newAddress, setNewAddress] = useState({
     name: user?.name || '',
-    phone: (user as any)?.phone || '',
+    phone: user?.phone || '',
     street: '',
     ward: '',
     district: '',
@@ -97,6 +158,10 @@ const ProfilePage: React.FC = () => {
           break
         case 'addresses':
           fetchAddresses()
+          fetchProvinces()
+          break
+        case 'payments':
+          fetchPaymentMethods()
           break
       }
     }
@@ -174,15 +239,7 @@ const ProfilePage: React.FC = () => {
       fetchAddresses()
       setShowAddressModal(false)
       setEditingAddress(null)
-      setNewAddress({
-        name: user?.name || '',
-        phone: (user as any)?.phone || '',
-        street: '',
-        ward: '',
-        district: '',
-        city: '',
-        isDefault: false
-      })
+      resetAddressForm()
     } catch (error) {
       console.error('Error saving address:', error)
     }
@@ -204,6 +261,192 @@ const ProfilePage: React.FC = () => {
     } catch (error) {
       console.error('Error setting default address:', error)
     }
+  }
+
+  // Province/District/Ward functions
+  const fetchProvinces = async () => {
+    try {
+      const response = await api.get('/address-api/provinces')
+      setProvinces(response.data)
+    } catch (error) {
+      console.error('Error fetching provinces:', error)
+    }
+  }
+
+  const fetchDistricts = async (provinceCode: string) => {
+    try {
+      const response = await api.get(`/address-api/districts?province_code=${provinceCode}`)
+      setDistricts(response.data)
+      setWards([]) // Reset wards when province changes
+    } catch (error) {
+      console.error('Error fetching districts:', error)
+    }
+  }
+
+  const fetchWards = async (districtCode: string) => {
+    try {
+      const response = await api.get(`/address-api/wards?district_code=${districtCode}`)
+      setWards(response.data)
+    } catch (error) {
+      console.error('Error fetching wards:', error)
+    }
+  }
+
+  const handleProvinceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const provinceCode = e.target.value
+    const province = provinces.find((p: any) => p.code === provinceCode)
+    setSelectedProvince(provinceCode)
+    setSelectedDistrict('')
+    setSelectedWard('')
+    setNewAddress(prev => ({ ...prev, city: province?.name || '', district: '', ward: '' }))
+    if (provinceCode) {
+      fetchDistricts(provinceCode)
+    } else {
+      setDistricts([])
+      setWards([])
+    }
+  }
+
+  const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const districtCode = e.target.value
+    const district = districts.find((d: any) => d.code === districtCode)
+    setSelectedDistrict(districtCode)
+    setSelectedWard('')
+    setNewAddress(prev => ({ ...prev, district: district?.name || '', ward: '' }))
+    if (districtCode) {
+      fetchWards(districtCode)
+    } else {
+      setWards([])
+    }
+  }
+
+  const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const wardCode = e.target.value
+    const ward = wards.find((w: any) => w.code === wardCode)
+    setSelectedWard(wardCode)
+    setNewAddress(prev => ({ ...prev, ward: ward?.name || '' }))
+  }
+
+  const resetAddressForm = () => {
+    setNewAddress({
+      name: user?.name || '',
+      phone: user?.phone || '',
+      street: '',
+      ward: '',
+      district: '',
+      city: '',
+      isDefault: false
+    })
+    setSelectedProvince('')
+    setSelectedDistrict('')
+    setSelectedWard('')
+    setProvinces([])
+    setDistricts([])
+    setWards([])
+  }
+
+  const openAddressModal = (address?: Address) => {
+    if (address) {
+      setEditingAddress(address)
+      setNewAddress(address)
+    } else {
+      setEditingAddress(null)
+      resetAddressForm()
+    }
+    setShowAddressModal(true)
+    fetchProvinces()
+  }
+
+  // Payment Methods functions
+  const fetchPaymentMethods = async () => {
+    try {
+      setLoading(true)
+      const response = await api.get('/payment-methods')
+      if (response.status === 200) {
+        setPaymentMethods(response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching payment methods:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const savePaymentMethod = async () => {
+    try {
+      if (editingPayment) {
+        await api.patch(`/payment-methods/${editingPayment._id}`, newPayment)
+      } else {
+        await api.post('/payment-methods', newPayment)
+      }
+      fetchPaymentMethods()
+      setShowPaymentModal(false)
+      setEditingPayment(null)
+      resetPaymentForm()
+    } catch (error) {
+      console.error('Error saving payment method:', error)
+    }
+  }
+
+  const deletePaymentMethod = async (paymentId: string) => {
+    try {
+      await api.delete(`/payment-methods/${paymentId}`)
+      fetchPaymentMethods()
+    } catch (error) {
+      console.error('Error deleting payment method:', error)
+    }
+  }
+
+  const setDefaultPaymentMethod = async (paymentId: string) => {
+    try {
+      await api.patch(`/payment-methods/${paymentId}/set-default`)
+      fetchPaymentMethods()
+    } catch (error) {
+      console.error('Error setting default payment method:', error)
+    }
+  }
+
+  const resetPaymentForm = () => {
+    setNewPayment({
+      type: 'card',
+      name: '',
+      cardNumber: '',
+      cardType: '',
+      expiryMonth: '',
+      expiryYear: '',
+      cardHolderName: '',
+      bankName: '',
+      accountNumber: '',
+      accountHolderName: '',
+      walletType: '',
+      walletId: '',
+      isDefault: false
+    })
+  }
+
+  const openPaymentModal = (payment?: PaymentMethod) => {
+    if (payment) {
+      setEditingPayment(payment)
+      setNewPayment({
+        type: payment.type,
+        name: payment.name,
+        cardNumber: payment.cardNumber || '',
+        cardType: payment.cardType || '',
+        expiryMonth: payment.expiryMonth?.toString() || '',
+        expiryYear: payment.expiryYear?.toString() || '',
+        cardHolderName: payment.cardHolderName || '',
+        bankName: payment.bankName || '',
+        accountNumber: payment.accountNumber || '',
+        accountHolderName: payment.accountHolderName || '',
+        walletType: payment.walletType || '',
+        walletId: payment.walletId || '',
+        isDefault: payment.isDefault
+      })
+    } else {
+      setEditingPayment(null)
+      resetPaymentForm()
+    }
+    setShowPaymentModal(true)
   }
 
   const getStatusColor = (status: string) => {
@@ -340,7 +583,7 @@ const ProfilePage: React.FC = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại</label>
                             <input
                               type="tel"
-                              value={(user as any)?.phone || 'Chưa cập nhật'}
+                              value={user?.phone || 'Chưa cập nhật'}
                               disabled
                               className="block w-full border-gray-300 rounded-md shadow-sm bg-gray-50"
                             />
@@ -558,7 +801,7 @@ const ProfilePage: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <h2 className="text-xl font-semibold text-gray-900">Địa chỉ giao hàng</h2>
                         <button
-                          onClick={() => setShowAddressModal(true)}
+                          onClick={() => openAddressModal()}
                           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                         >
                           <PlusIcon className="h-4 w-4 mr-2" />
@@ -596,11 +839,7 @@ const ProfilePage: React.FC = () => {
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <button
-                                    onClick={() => {
-                                      setEditingAddress(address)
-                                      setNewAddress(address)
-                                      setShowAddressModal(true)
-                                    }}
+                                    onClick={() => openAddressModal(address)}
                                     className="p-2 text-gray-400 hover:text-gray-600"
                                   >
                                     <PencilIcon className="h-4 w-4" />
@@ -630,7 +869,7 @@ const ProfilePage: React.FC = () => {
                           <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có địa chỉ nào</h3>
                           <p className="text-gray-600 mb-4">Thêm địa chỉ giao hàng để thuận tiện hơn khi đặt hàng</p>
                           <button
-                            onClick={() => setShowAddressModal(true)}
+                            onClick={() => openAddressModal()}
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
                           >
                             <PlusIcon className="h-4 w-4 mr-2" />
@@ -643,14 +882,100 @@ const ProfilePage: React.FC = () => {
 
                   {activeTab === 'payments' && (
                     <div className="space-y-6">
-                      <h2 className="text-xl font-semibold text-gray-900">Phương thức thanh toán</h2>
-                      <div className="bg-gray-50 rounded-lg p-8 text-center">
-                        <CreditCardIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600">Chưa có phương thức thanh toán nào</p>
-                        <button className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
-                          Thêm thẻ mới
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-semibold text-gray-900">Phương thức thanh toán</h2>
+                        <button
+                          onClick={() => openPaymentModal()}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                        >
+                          <PlusIcon className="h-4 w-4 mr-2" />
+                          Thêm phương thức
                         </button>
                       </div>
+
+                      {paymentMethods.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {paymentMethods.map((method: PaymentMethod) => (
+                            <div key={method._id} className="bg-white border border-gray-200 rounded-lg p-6 relative">
+                              {method.isDefault && (
+                                <span className="absolute top-3 right-3 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  Mặc định
+                                </span>
+                              )}
+                              
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center mb-2">
+                                    <CreditCardIcon className="h-6 w-6 text-gray-400 mr-2" />
+                                    <span className="font-medium text-gray-900">{method.name}</span>
+                                  </div>
+                                  
+                                  {method.type === 'card' && (
+                                    <>
+                                      <p className="text-sm text-gray-600">
+                                        {method.cardType} •••• {method.cardNumber}
+                                      </p>
+                                      <p className="text-sm text-gray-600">
+                                        Hết hạn: {method.expiryMonth}/{method.expiryYear}
+                                      </p>
+                                    </>
+                                  )}
+                                  
+                                  {method.type === 'bank_account' && (
+                                    <>
+                                      <p className="text-sm text-gray-600">{method.bankName}</p>
+                                      <p className="text-sm text-gray-600">•••• {method.accountNumber}</p>
+                                    </>
+                                  )}
+                                  
+                                  {method.type === 'ewallet' && (
+                                    <>
+                                      <p className="text-sm text-gray-600">{method.walletType}</p>
+                                      <p className="text-sm text-gray-600">•••• {method.walletId}</p>
+                                    </>
+                                  )}
+                                </div>
+                                
+                                <div className="flex items-center space-x-2 ml-4">
+                                  <button
+                                    onClick={() => openPaymentModal(method)}
+                                    className="p-2 text-gray-400 hover:text-gray-600"
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => deletePaymentMethod(method._id)}
+                                    className="p-2 text-gray-400 hover:text-red-600"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              {!method.isDefault && (
+                                <button
+                                  onClick={() => setDefaultPaymentMethod(method._id)}
+                                  className="mt-3 text-sm text-blue-600 hover:text-blue-800"
+                                >
+                                  Đặt làm mặc định
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="bg-gray-50 rounded-lg p-8 text-center">
+                          <CreditCardIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-600 mb-4">Chưa có phương thức thanh toán nào</p>
+                          <button
+                            onClick={() => openPaymentModal()}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                          >
+                            <PlusIcon className="h-4 w-4 mr-2" />
+                            Thêm phương thức đầu tiên
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -699,15 +1024,7 @@ const ProfilePage: React.FC = () => {
                   onClick={() => {
                     setShowAddressModal(false)
                     setEditingAddress(null)
-                    setNewAddress({
-                      name: '',
-                      phone: '',
-                      street: '',
-                      ward: '',
-                      district: '',
-                      city: '',
-                      isDefault: false
-                    })
+                    resetAddressForm()
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -751,36 +1068,53 @@ const ProfilePage: React.FC = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phường/Xã</label>
-                    <input
-                      type="text"
-                      value={newAddress.ward}
-                      onChange={(e) => setNewAddress({ ...newAddress, ward: e.target.value })}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố</label>
+                    <select
+                      value={selectedProvince}
+                      onChange={handleProvinceChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Phường/Xã"
-                    />
+                    >
+                      <option value="">Chọn tỉnh/thành phố</option>
+                      {provinces.map((province) => (
+                        <option key={province.code} value={province.code}>
+                          {province.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện</label>
-                    <input
-                      type="text"
-                      value={newAddress.district}
-                      onChange={(e) => setNewAddress({ ...newAddress, district: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Quận/Huyện"
-                    />
+                    <select
+                      value={selectedDistrict}
+                      onChange={handleDistrictChange}
+                      disabled={!selectedProvince}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                    >
+                      <option value="">Chọn quận/huyện</option>
+                      {districts.map((district) => (
+                        <option key={district.code} value={district.code}>
+                          {district.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành</label>
-                    <input
-                      type="text"
-                      value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Tỉnh/Thành phố"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Phường/Xã</label>
+                    <select
+                      value={selectedWard}
+                      onChange={handleWardChange}
+                      disabled={!selectedDistrict}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                    >
+                      <option value="">Chọn phường/xã</option>
+                      {wards.map((ward) => (
+                        <option key={ward.code} value={ward.code}>
+                          {ward.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 
@@ -803,15 +1137,7 @@ const ProfilePage: React.FC = () => {
                   onClick={() => {
                     setShowAddressModal(false)
                     setEditingAddress(null)
-                    setNewAddress({
-                      name: '',
-                      phone: '',
-                      street: '',
-                      ward: '',
-                      district: '',
-                      city: '',
-                      isDefault: false
-                    })
+                    resetAddressForm()
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
                 >
@@ -823,6 +1149,245 @@ const ProfilePage: React.FC = () => {
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingAddress ? 'Cập nhật' : 'Lưu địa chỉ'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Payment Modal */}
+        {showPaymentModal && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {editingPayment ? 'Chỉnh sửa phương thức thanh toán' : 'Thêm phương thức thanh toán'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false)
+                    setEditingPayment(null)
+                    resetPaymentForm()
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Loại phương thức</label>
+                  <select
+                    value={newPayment.type}
+                    onChange={(e) => setNewPayment({ ...newPayment, type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="card">Thẻ tín dụng/ghi nợ</option>
+                    <option value="bank_account">Tài khoản ngân hàng</option>
+                    <option value="ewallet">Ví điện tử</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên phương thức</label>
+                  <input
+                    type="text"
+                    value={newPayment.name}
+                    onChange={(e) => setNewPayment({ ...newPayment, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="VD: Thẻ Visa chính"
+                  />
+                </div>
+
+                {newPayment.type === 'card' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Số thẻ</label>
+                      <input
+                        type="text"
+                        value={newPayment.cardNumber}
+                        onChange={(e) => setNewPayment({ ...newPayment, cardNumber: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="1234 5678 9012 3456"
+                        maxLength={19}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Loại thẻ</label>
+                      <select
+                        value={newPayment.cardType}
+                        onChange={(e) => setNewPayment({ ...newPayment, cardType: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Chọn loại thẻ</option>
+                        <option value="Visa">Visa</option>
+                        <option value="MasterCard">MasterCard</option>
+                        <option value="JCB">JCB</option>
+                        <option value="American Express">American Express</option>
+                      </select>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tháng hết hạn</label>
+                        <select
+                          value={newPayment.expiryMonth}
+                          onChange={(e) => setNewPayment({ ...newPayment, expiryMonth: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Tháng</option>
+                          {Array.from({ length: 12 }, (_, i) => (
+                            <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
+                              {String(i + 1).padStart(2, '0')}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Năm hết hạn</label>
+                        <select
+                          value={newPayment.expiryYear}
+                          onChange={(e) => setNewPayment({ ...newPayment, expiryYear: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">Năm</option>
+                          {Array.from({ length: 20 }, (_, i) => {
+                            const year = new Date().getFullYear() + i;
+                            return (
+                              <option key={year} value={year}>
+                                {year}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên chủ thẻ</label>
+                      <input
+                        type="text"
+                        value={newPayment.cardHolderName}
+                        onChange={(e) => setNewPayment({ ...newPayment, cardHolderName: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Tên như trên thẻ"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {newPayment.type === 'bank_account' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên ngân hàng</label>
+                      <select
+                        value={newPayment.bankName}
+                        onChange={(e) => setNewPayment({ ...newPayment, bankName: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Chọn ngân hàng</option>
+                        <option value="Vietcombank">Vietcombank</option>
+                        <option value="BIDV">BIDV</option>
+                        <option value="VietinBank">VietinBank</option>
+                        <option value="Agribank">Agribank</option>
+                        <option value="Techcombank">Techcombank</option>
+                        <option value="MBBank">MBBank</option>
+                        <option value="VPBank">VPBank</option>
+                        <option value="TPBank">TPBank</option>
+                        <option value="Sacombank">Sacombank</option>
+                        <option value="ACB">ACB</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Số tài khoản</label>
+                      <input
+                        type="text"
+                        value={newPayment.accountNumber}
+                        onChange={(e) => setNewPayment({ ...newPayment, accountNumber: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Số tài khoản ngân hàng"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tên chủ tài khoản</label>
+                      <input
+                        type="text"
+                        value={newPayment.accountHolderName}
+                        onChange={(e) => setNewPayment({ ...newPayment, accountHolderName: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Tên chủ tài khoản"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {newPayment.type === 'ewallet' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Loại ví điện tử</label>
+                      <select
+                        value={newPayment.walletType}
+                        onChange={(e) => setNewPayment({ ...newPayment, walletType: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Chọn ví điện tử</option>
+                        <option value="MoMo">MoMo</option>
+                        <option value="ZaloPay">ZaloPay</option>
+                        <option value="VNPay">VNPay</option>
+                        <option value="ShopeePay">ShopeePay</option>
+                        <option value="GrabPay">GrabPay</option>
+                        <option value="AirPay">AirPay</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">ID ví / Số điện thoại</label>
+                      <input
+                        type="text"
+                        value={newPayment.walletId}
+                        onChange={(e) => setNewPayment({ ...newPayment, walletId: e.target.value })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Số điện thoại hoặc ID ví"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isDefaultPayment"
+                    checked={newPayment.isDefault}
+                    onChange={(e) => setNewPayment({ ...newPayment, isDefault: e.target.checked })}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isDefaultPayment" className="ml-2 block text-sm text-gray-900">
+                    Đặt làm phương thức mặc định
+                  </label>
+                </div>
+              </div>
+              
+              <div className="mt-6 flex items-center justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setShowPaymentModal(false)
+                    setEditingPayment(null)
+                    resetPaymentForm()
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={savePaymentMethod}
+                  disabled={!newPayment.name || !newPayment.type}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {editingPayment ? 'Cập nhật' : 'Lưu phương thức'}
                 </button>
               </div>
             </div>

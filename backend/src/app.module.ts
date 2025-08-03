@@ -11,6 +11,7 @@ import { OrdersModule } from './orders/orders.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { AddressesModule } from './addresses/addresses.module';
+import { AddressApiModule } from './address-api/address-api.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { UploadModule } from './upload/upload.module';
@@ -27,8 +28,10 @@ import { Address, AddressSchema } from './common/schemas/address.schema';
 import { StockAdjustment, StockAdjustmentSchema } from './common/schemas/stock-adjustment.schema';
 import { GuestCustomer, GuestCustomerSchema } from './common/schemas/guest-customer.schema';
 import { Brand, BrandSchema } from './common/schemas/brand.schema';
+import { PaymentMethod, PaymentMethodSchema } from './common/schemas/payment-method.schema';
 import { BrandsModule } from './brands/brands.module';
 import { EmailModule } from './email/email.module';
+import { PaymentMethodsModule } from './payment-methods/payment-methods.module';
 
 @Module({
   imports: [
@@ -55,6 +58,7 @@ import { EmailModule } from './email/email.module';
       { name: StockAdjustment.name, schema: StockAdjustmentSchema },
       { name: GuestCustomer.name, schema: GuestCustomerSchema },
       { name: Brand.name, schema: BrandSchema },
+      { name: PaymentMethod.name, schema: PaymentMethodSchema },
     ]),
     
     // Rate limiting
@@ -72,12 +76,14 @@ import { EmailModule } from './email/email.module';
     ReviewsModule,
     FavoritesModule,
     AddressesModule,
+    AddressApiModule,
     AnalyticsModule,
     InventoryModule,
     UploadModule,
     GuestCustomerModule,
     BrandsModule,
     EmailModule,
+    PaymentMethodsModule,
   ],
   controllers: [AdminController],
   providers: [ClearDataService],

@@ -3,17 +3,15 @@ import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
 import Layout from '../../src/components/Layout'
+import ProductCard from '../../src/components/ProductCard'
 import SearchAndFilter, { FilterConfig } from '../../src/components/SearchAndFilter'
 import { Product } from '@/types'
-import { useCart } from '../../src/context/CartContext'
 import productService from '../../src/services/productService'
 import categoriesService from '../../src/services/categoriesService'
-import { ShoppingCartIcon } from '@heroicons/react/24/outline'
 import toast from 'react-hot-toast'
 
 export default function ProductsPage() {
   const router = useRouter()
-  const { addItem } = useCart()
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [brands, setBrands] = useState<string[]>([])
@@ -154,63 +152,6 @@ export default function ProductsPage() {
     }).format(price)
   }
 
-  // Helper function to safely extract category name
-  const getCategoryName = (category: any): string => {
-    if (typeof category === 'string') return category;
-    if (category && typeof category === 'object' && 'name' in category) return category.name;
-    return 'Unknown';
-  };
-
-  // Check if product is actually in stock
-  const isActuallyInStock = (product: Product) => {
-    return product.inStock && (product.stock === undefined || product.stock > 0);
-  };
-
-  const handleAddToCart = async (product: Product) => {
-    if (!isActuallyInStock(product)) {
-      toast.error('Sản phẩm này hiện đã hết hàng!');
-      return;
-    }
-
-    const success = await addItem({
-      id: product._id || product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images?.[0] || '/images/placeholder-product.jpg',
-      category: getCategoryName(product.category)
-    });
-    
-    if (success) {
-      toast.success('Đã thêm vào giỏ hàng!');
-    } else {
-      toast.error('Không thể thêm vào giỏ hàng. Sản phẩm có thể đã hết hàng!');
-    }
-  };
-
-  const handleBuyNow = async (product: Product) => {
-    if (!isActuallyInStock(product)) {
-      toast.error('Sản phẩm này hiện đã hết hàng!');
-      return;
-    }
-    
-    // Tạo session mua ngay riêng biệt, không thêm vào giỏ hàng chung
-    const buyNowItem = {
-      id: product._id || product.id,
-      name: product.name,
-      price: product.price,
-      image: product.images?.[0] || '/images/placeholder-product.jpg',
-      category: getCategoryName(product.category),
-      quantity: 1
-    };
-    
-    // Lưu thông tin "mua ngay" vào sessionStorage
-    sessionStorage.setItem('buyNowItem', JSON.stringify(buyNowItem));
-    sessionStorage.setItem('isBuyNow', 'true');
-    
-    // Chuyển thẳng đến checkout
-    router.push('/checkout?mode=buynow');
-  };
-
   return (
     <>
       <Head>
@@ -249,126 +190,30 @@ export default function ProductsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
-                <div key={product._id || product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-                  {/* Product Image */}
-                  <Link href={`/products/${product._id || product.id}`}>
-                    <div className="aspect-w-1 aspect-h-1 bg-gray-200 cursor-pointer">
-                      {product.images && product.images.length > 0 ? (
-                        <img
-                          src={product.images[0]}
-                          alt={product.name}
-                          className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/images/placeholder-product.jpg'
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-400">Chưa có hình ảnh</span>
-                        </div>
-                      )}
-                    </div>
-                  </Link>
-                  
-                  {/* Product Info */}
-                  <div className="p-4">
-                    <Link href={`/products/${product._id || product.id}`}>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 cursor-pointer hover:text-blue-600 transition-colors">
-                        {product.name}
-                      </h3>
-                    </Link>
-                    <p className="text-sm text-gray-600 mb-2">{product.brand}</p>
-                    
-                    {/* Price */}
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <span className="text-lg font-bold text-red-600">
-                          {formatPrice(product.price)}
-                        </span>
-                        {product.originalPrice && product.originalPrice > product.price && (
-                          <span className="text-sm text-gray-500 line-through ml-2">
-                            {formatPrice(product.originalPrice)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Stock Display */}
-                    <div className="mb-3">
-                      {isActuallyInStock(product) ? (
-                        <div className="flex items-center text-sm">
-                          <span className="text-green-600 font-medium">
-                            Còn hàng
-                          </span>
-                          {product.stock !== undefined && (
-                            <span className="text-gray-500 ml-2">
-                              ({product.stock} sản phẩm)
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-red-600 text-sm font-medium">
-                          Hết hàng
-                        </span>
-                      )}
-                    </div>
-                    
-                    {/* Rating */}
-                    {product.rating > 0 && (
-                      <div className="flex items-center mb-3">
-                        <div className="flex items-center">
-                          {[...Array(5)].map((_, i) => (
-                            <svg
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < Math.floor(product.rating)
-                                  ? 'text-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                          ))}
-                        </div>
-                        <span className="text-sm text-gray-600 ml-1">
-                          ({product.reviewCount || 0})
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="space-y-2">
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        disabled={!isActuallyInStock(product)}
-                        className={`w-full py-2 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                          isActuallyInStock(product)
-                            ? 'bg-blue-600 text-white hover:bg-blue-700'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        <ShoppingCartIcon className="h-5 w-5" />
-                        Thêm vào giỏ hàng
-                      </button>
-                      
-                      <button
-                        onClick={() => handleBuyNow(product)}
-                        disabled={!isActuallyInStock(product)}
-                        className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                          isActuallyInStock(product)
-                            ? 'bg-orange-600 text-white hover:bg-orange-700'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                      >
-                        Mua ngay
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {products.map((product) => {
+                // Transform product to match ProductCard interface
+                const productForCard = {
+                  id: product._id || product.id,
+                  name: product.name,
+                  price: product.price,
+                  originalPrice: product.originalPrice,
+                  image: product.images?.[0] || product.image || '/images/placeholder-product.jpg',
+                  category: product.category,
+                  rating: product.rating || 0,
+                  reviewCount: product.reviewCount || 0,
+                  inStock: product.inStock,
+                  stock: product.stock,
+                  isNew: product.isNew,
+                  isHot: product.isHot
+                };
+                
+                return (
+                  <ProductCard 
+                    key={product._id || product.id} 
+                    product={productForCard} 
+                  />
+                );
+              })}
             </div>
           )}
         </div>

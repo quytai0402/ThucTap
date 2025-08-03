@@ -233,10 +233,24 @@ export class OrdersService {
   }
 
   async findOne(id: string): Promise<Order> {
-    const order = await this.orderModel
-      .findById(id)
-      .populate('customer', 'fullName email phone address')
-      .populate('items.product', 'name images price specifications slug');
+    // First try to find by MongoDB _id if it looks like a valid ObjectId
+    let order = null;
+    
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      // It's a valid MongoDB ObjectId
+      order = await this.orderModel
+        .findById(id)
+        .populate('customer', 'fullName email phone address')
+        .populate('items.product', 'name images price specifications slug');
+    }
+    
+    // If not found by _id, try to find by orderNumber
+    if (!order) {
+      order = await this.orderModel
+        .findOne({ orderNumber: id })
+        .populate('customer', 'fullName email phone address')
+        .populate('items.product', 'name images price specifications slug');
+    }
       
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -250,6 +264,32 @@ export class OrdersService {
       .findOne({ orderNumber })
       .populate('customer', 'fullName email phone')
       .populate('items.product', 'name images price');
+      
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    
+    return order;
+  }
+
+  async findByIdOrOrderNumber(identifier: string): Promise<Order> {
+    let order;
+    
+    // Try to find by MongoDB _id first
+    if (identifier.match(/^[0-9a-fA-F]{24}$/)) {
+      order = await this.orderModel
+        .findById(identifier)
+        .populate('customer', 'fullName email phone')
+        .populate('items.product', 'name images price');
+    }
+    
+    // If not found by _id, try by orderNumber
+    if (!order) {
+      order = await this.orderModel
+        .findOne({ orderNumber: identifier })
+        .populate('customer', 'fullName email phone')
+        .populate('items.product', 'name images price');
+    }
       
     if (!order) {
       throw new NotFoundException('Order not found');

@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Put,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -65,5 +66,51 @@ export class AddressesController {
   async remove(@Request() req, @Param('id') id: string) {
     await this.addressesService.remove(req.user.sub, id);
     return { message: 'Address deleted successfully' };
+  }
+
+  // Smart address management endpoints
+  @Get('check/can-add')
+  @ApiOperation({ summary: 'Check if user can add new address' })
+  async canAddNewAddress(@Request() req) {
+    const canAdd = await this.addressesService.canAddNewAddress(req.user.sub);
+    const count = await this.addressesService.getAddressCount(req.user.sub);
+    return { canAdd, currentCount: count, maxAllowed: 3 };
+  }
+
+  @Get('suggestions/for-checkout')
+  @ApiOperation({ summary: 'Get suggested addresses for checkout' })
+  async getSuggestedAddresses(@Request() req) {
+    return this.addressesService.getSuggestedAddressesForUser(req.user.sub);
+  }
+
+  @Post('from-order')
+  @ApiOperation({ summary: 'Create or update address from order' })
+  async createOrUpdateFromOrder(
+    @Request() req, 
+    @Body() addressData: CreateAddressDto
+  ) {
+    try {
+      return await this.addressesService.createOrUpdateFromOrder(req.user.sub, addressData);
+    } catch (error) {
+      if (error.message === 'MAX_ADDRESSES_REACHED') {
+        const suggestions = await this.addressesService.getSuggestedAddressesForUser(req.user.sub);
+        return {
+          error: 'MAX_ADDRESSES_REACHED',
+          message: 'Bạn đã có tối đa 3 địa chỉ. Vui lòng chọn địa chỉ để thay thế.',
+          suggestions
+        };
+      }
+      throw error;
+    }
+  }
+
+  @Put(':id/replace')
+  @ApiOperation({ summary: 'Replace existing address with new one' })
+  async replaceAddress(
+    @Request() req,
+    @Param('id') id: string,
+    @Body() newAddressData: CreateAddressDto
+  ) {
+    return this.addressesService.replaceAddress(req.user.sub, id, newAddressData);
   }
 }

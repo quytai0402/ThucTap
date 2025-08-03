@@ -338,10 +338,10 @@ export default function ProductDetailPage() {
               <p className="text-sm text-gray-600">
                 Danh mục: 
                 <Link 
-                  href={`/categories?category=${encodeURIComponent(product.category)}`}
+                  href={`/categories?category=${encodeURIComponent(getCategoryName(product.category))}`}
                   className="text-blue-600 hover:text-blue-800 ml-1 hover:underline font-medium"
                 >
-                  {product.category}
+                  {getCategoryName(product.category)}
                 </Link>
               </p>
             </div>
@@ -413,7 +413,7 @@ export default function ProductDetailPage() {
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <div className="flex items-center text-sm">
                   <span className="text-gray-600 w-20">Thương hiệu:</span>
-                  <span className="font-medium text-gray-900">{product.brand}</span>
+                  <span className="font-medium text-gray-900">{typeof product.brand === 'string' ? product.brand : (product.brand as any)?.name || 'N/A'}</span>
                 </div>
                 <div className="flex items-center text-sm">
                   <span className="text-gray-600 w-20">Tình trạng:</span>
